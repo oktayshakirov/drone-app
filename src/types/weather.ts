@@ -11,6 +11,7 @@ export interface WindConditions {
 }
 
 export interface CurrentWeatherSummary {
+  conditionCode: string | null; // e.g. "MostlyClear", "Cloudy" — WeatherKit PascalCase
   wind: WindConditions;
   visibilityMeters: number | null;
   cloudCoverPercent: number | null;

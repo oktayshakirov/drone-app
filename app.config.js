@@ -16,7 +16,7 @@ module.exports = {
     },
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.example.dronepal",
+      bundleIdentifier: "com.shadev.dronepal",
       infoPlist: {
         NSLocationWhenInUseUsageDescription:
           "DronePal uses your location to fetch weather for your flying site.",
@@ -28,7 +28,7 @@ module.exports = {
         backgroundColor: "#0f172a",
       },
       edgeToEdgeEnabled: true,
-      package: "com.example.dronepal",
+      package: "com.shadev.dronepal",
       permissions: ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"],
     },
     web: { favicon: "./assets/favicon.png" },

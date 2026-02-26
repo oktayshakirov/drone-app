@@ -1,12 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import { SafetyGauge } from './src/components/SafetyGauge';
-import { WeatherCard } from './src/components/WeatherCard';
+import { FlightOverviewHero } from './src/components/FlightOverviewHero';
+import { ConditionsGrid } from './src/components/ConditionsGrid';
+import type { GridItem } from './src/components/ConditionsGrid';
 import { MetricEducationModal } from './src/components/MetricEducationModal';
-import { WeightClassSelector } from './src/components/WeightClassSelector';
-import { DroneHeroPlaceholder } from './src/components/DroneHeroPlaceholder';
+import { WeightClassDropdown } from './src/components/WeightClassDropdown';
 import { MapPlaceholderCard } from './src/components/MapPlaceholderCard';
 import { useLocation } from './src/hooks/useLocation';
 import { useWeather } from './src/hooks/useWeather';
@@ -39,39 +40,73 @@ export default function App() {
   const thresholds = getThresholdsForClass(weightClass);
   const safetyStatus = weather ? evaluateSafety(weather.current, thresholds) : 'green';
 
+  const conditionsGridItems = useMemo((): GridItem[] => {
+    if (!weather) return [];
+    const c = weather.current;
+    return [
+      {
+        title: 'Wind',
+        value: `${formatWindMph(mpsToMph(c.wind.speedMps))} gust ${c.wind.gustMps != null ? formatWindMph(mpsToMph(c.wind.gustMps)) : '—'} · ${degreesToCardinal(c.wind.directionDegrees)}`,
+        metricKey: 'wind',
+        shape: 'wide',
+      },
+      {
+        title: 'Visibility',
+        value: c.visibilityMeters != null ? `${formatVisibility(c.visibilityMeters)} (${formatVisibilityMeters(c.visibilityMeters)})` : '—',
+        metricKey: 'visibility',
+        shape: 'wide',
+      },
+      { title: 'Temperature', value: formatTemp(c.temperatureCelsius, false), metricKey: 'temperature', shape: 'cube' },
+      { title: 'Humidity', value: formatPercent(c.humidityPercent), metricKey: 'humidity', shape: 'cube' },
+      { title: 'Cloud cover', value: formatPercent(c.cloudCoverPercent), metricKey: 'cloudCover', shape: 'cube' },
+      { title: 'Pressure', value: c.pressureHpa != null ? `${c.pressureHpa} hPa` : '—', metricKey: 'pressure', shape: 'cube' },
+      { title: 'Precipitation', value: formatPercent(c.precipitationChancePercent), metricKey: 'precipitation', shape: 'cube' },
+      { title: 'UV index', value: c.uvIndex != null ? String(c.uvIndex) : '—', metricKey: 'uvIndex', shape: 'cube' },
+      {
+        title: 'Sunrise / Sunset',
+        value: c.sunrise && c.sunset ? 'See times below' : '—',
+        metricKey: 'sunriseSunset',
+        shape: 'wide',
+      },
+    ];
+  }, [weather]);
+
   const loading = locationLoading || weatherLoading;
   const error = locationError ?? weatherError;
 
   if (loading && !weather) {
     return (
       <SafeAreaProvider>
-        <View className="flex-1 bg-surface items-center justify-center">
-          <ActivityIndicator size="large" color="#22c55e" />
-          <Text className="text-slate-400 mt-4">Loading weather…</Text>
-          <StatusBar style="light" />
-        </View>
+        <LinearGradient colors={BACKGROUND_GRADIENT} style={styles.gradient}>
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator size="large" color="#22c55e" />
+            <Text className="text-slate-400 mt-4">Loading weather…</Text>
+            <StatusBar style="light" />
+          </View>
+        </LinearGradient>
       </SafeAreaProvider>
     );
   }
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView className="flex-1 bg-surface" edges={['top']}>
+      <LinearGradient colors={BACKGROUND_GRADIENT} style={styles.gradient}>
+      <SafeAreaView className="flex-1" style={styles.safeArea} edges={['top']}>
         <StatusBar style="light" />
         <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-          <Text className="text-white text-2xl font-bold">DronePal</Text>
-          <Text className="text-slate-400 text-sm mt-0.5">Weather for safe flying</Text>
+          {weather && (
+            <View className="mb-4">
+              <FlightOverviewHero
+                conditionCode={weather.current.conditionCode}
+                temperatureCelsius={weather.current.temperatureCelsius}
+                safetyStatus={safetyStatus}
+                formatTemp={formatTemp}
+              />
+            </View>
+          )}
 
-          <View className="mt-4">
-            <DroneHeroPlaceholder />
-          </View>
-
-          <View className="mt-4">
-            <WeightClassSelector selectedId={weightClass} onSelect={setWeightClass} />
-          </View>
-
-          <View className="mt-4">
-            <SafetyGauge status={safetyStatus} />
+          <View className="mb-4">
+            <WeightClassDropdown selectedId={weightClass} onSelect={setWeightClass} />
           </View>
 
           {error && (
@@ -87,66 +122,15 @@ export default function App() {
           )}
 
           {weather && (
-            <View className="mt-6 gap-3">
-              <Text className="section-label">Conditions</Text>
-              <WeatherCard
-                title="Wind"
-                value={`${formatWindMph(mpsToMph(weather.current.wind.speedMps))} gust ${weather.current.wind.gustMps != null ? formatWindMph(mpsToMph(weather.current.wind.gustMps)) : '—'} · ${degreesToCardinal(weather.current.wind.directionDegrees)}`}
-                metricKey="wind"
-                onPress={setEducationMetric}
-              />
-              <WeatherCard
-                title="Visibility"
-                value={weather.current.visibilityMeters != null ? `${formatVisibility(weather.current.visibilityMeters)} (${formatVisibilityMeters(weather.current.visibilityMeters)})` : '—'}
-                metricKey="visibility"
-                onPress={setEducationMetric}
-              />
-              <WeatherCard
-                title="Cloud cover"
-                value={formatPercent(weather.current.cloudCoverPercent)}
-                metricKey="cloudCover"
-                onPress={setEducationMetric}
-              />
-              <WeatherCard
-                title="Temperature"
-                value={formatTemp(weather.current.temperatureCelsius, false)}
-                metricKey="temperature"
-                onPress={setEducationMetric}
-              />
-              <WeatherCard
-                title="Humidity"
-                value={formatPercent(weather.current.humidityPercent)}
-                metricKey="humidity"
-                onPress={setEducationMetric}
-              />
-              <WeatherCard
-                title="Pressure"
-                value={weather.current.pressureHpa != null ? `${weather.current.pressureHpa} hPa` : '—'}
-                metricKey="pressure"
-                onPress={setEducationMetric}
-              />
-              <WeatherCard
-                title="Precipitation chance"
-                value={formatPercent(weather.current.precipitationChancePercent)}
-                metricKey="precipitation"
-                onPress={setEducationMetric}
-              />
-              <WeatherCard
-                title="Sunrise / Sunset"
-                value={weather.current.sunrise && weather.current.sunset ? 'See times below' : '—'}
-                metricKey="sunriseSunset"
-                onPress={setEducationMetric}
-              />
-              <WeatherCard
-                title="UV index"
-                value={weather.current.uvIndex != null ? String(weather.current.uvIndex) : '—'}
-                metricKey="uvIndex"
-                onPress={setEducationMetric}
+            <View className="mt-4">
+              <ConditionsGrid
+                items={conditionsGridItems}
+                onMetricPress={setEducationMetric}
               />
             </View>
           )}
 
-          <View className="mt-6">
+          <View className="mt-4">
             <MapPlaceholderCard />
           </View>
 
@@ -167,6 +151,14 @@ export default function App() {
           onClose={() => setEducationMetric(null)}
         />
       </SafeAreaView>
+      </LinearGradient>
     </SafeAreaProvider>
   );
 }
+
+const BACKGROUND_GRADIENT: readonly [string, string, ...string[]] = ['#000000', '#0a0a0a', '#111111'];
+
+const styles = StyleSheet.create({
+  gradient: { flex: 1 },
+  safeArea: { backgroundColor: 'transparent' },
+});

@@ -5,10 +5,14 @@
 @layer components {
   /* Single source for card pattern (guidelines: same card pattern for all weather cards and placeholders) */
   .card {
-    @apply rounded-xl border border-border bg-card p-4;
+    @apply rounded-xl border border-border bg-card p-3;
+  }
+  /* Condition grid boxes: card style with consistent padding for icon + content */
+  .condition-box {
+    @apply rounded-xl border border-border bg-card p-3;
   }
   /* Single source for section/card labels (Conditions, Map, Drone weight class) */
   .section-label {
-    @apply text-slate-400 text-xs font-medium uppercase tracking-wider;
+    @apply text-slate-400 text-[11px] font-medium uppercase tracking-wider;
   }
 }

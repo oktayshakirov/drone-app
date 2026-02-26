@@ -6,6 +6,7 @@ import type { WeatherData } from '../types/weather';
 export function getMockWeather(): WeatherData {
   return {
     current: {
+      conditionCode: 'PartlyCloudy',
       wind: {
         speedMps: 3.5,
         gustMps: 5,

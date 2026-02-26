@@ -69,6 +69,7 @@ function mapWind(raw: RawCurrentWeather): WindConditions {
 
 function mapCurrent(raw: RawCurrentWeather): CurrentWeatherSummary {
   return {
+    conditionCode: raw.conditionCode ?? null,
     wind: mapWind(raw),
     visibilityMeters: raw.visibility ?? null,
     cloudCoverPercent: raw.cloudCover ?? null,
