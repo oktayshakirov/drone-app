@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  /* Single source for card pattern (guidelines: same card pattern for all weather cards and placeholders) */
+  .card {
+    @apply rounded-xl border border-border bg-card p-4;
+  }
+  /* Single source for section/card labels (Conditions, Map, Drone weight class) */
+  .section-label {
+    @apply text-slate-400 text-xs font-medium uppercase tracking-wider;
+  }
+}
