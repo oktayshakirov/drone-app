@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import * as Location from 'expo-location';
 
 export interface LocationCoords {
@@ -9,13 +9,34 @@ export interface LocationCoords {
 export function useLocation(): {
   coords: LocationCoords | null;
   placeName: string | null;
+  devicePlaceName: string | null;
   error: string | null;
   loading: boolean;
+  setPickedLocation: (location: { latitude: number; longitude: number; placeName: string | null }) => void;
+  clearPickedLocation: () => void;
 } {
-  const [coords, setCoords] = useState<LocationCoords | null>(null);
-  const [placeName, setPlaceName] = useState<string | null>(null);
+  const [deviceCoords, setDeviceCoords] = useState<LocationCoords | null>(null);
+  const [devicePlaceName, setDevicePlaceName] = useState<string | null>(null);
+  const [pickedCoords, setPickedCoords] = useState<LocationCoords | null>(null);
+  const [pickedPlaceName, setPickedPlaceName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const coords = pickedCoords ?? deviceCoords;
+  const placeName = pickedPlaceName ?? devicePlaceName;
+
+  const setPickedLocation = useCallback(
+    (location: { latitude: number; longitude: number; placeName: string | null }) => {
+      setPickedCoords({ latitude: location.latitude, longitude: location.longitude });
+      setPickedPlaceName(location.placeName ?? null);
+    },
+    [],
+  );
+
+  const clearPickedLocation = useCallback(() => {
+    setPickedCoords(null);
+    setPickedPlaceName(null);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,14 +55,14 @@ export function useLocation(): {
         });
         if (cancelled) return;
         const { latitude, longitude } = location.coords;
-        setCoords({ latitude, longitude });
+        setDeviceCoords({ latitude, longitude });
 
         try {
           const [address] = await Location.reverseGeocodeAsync({ latitude, longitude });
           if (cancelled) return;
           if (address) {
             const parts = [address.city, address.region, address.country].filter(Boolean);
-            setPlaceName(parts.length > 0 ? parts.join(', ') : null);
+            setDevicePlaceName(parts.length > 0 ? parts.join(', ') : null);
           }
         } catch {
           // Keep placeName null; we can show coords instead
@@ -59,5 +80,13 @@ export function useLocation(): {
     return () => { cancelled = true; };
   }, []);
 
-  return { coords, placeName, error, loading };
+  return {
+    coords,
+    placeName,
+    devicePlaceName,
+    error,
+    loading,
+    setPickedLocation,
+    clearPickedLocation,
+  };
 }

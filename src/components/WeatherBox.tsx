@@ -33,14 +33,14 @@ export function WeatherBox({
       activeOpacity={0.8}
       onPress={() => onPress(metricKey)}
       style={isCube ? styles.cube : undefined}
-      className={`condition-box ${isCube ? "flex-1 justify-center min-h-[76px]" : "flex-row items-center justify-between"}`}
+      className={`condition-box ${isCube ? "flex-1 justify-center min-h-[56px] p-2" : "flex-row items-center justify-between"}`}
     >
       {isCube ? (
         <View className="items-center justify-center">
-          <View className="mb-2">
-            <Ionicons name={iconName} size={24} color={ICON_COLOR} />
+          <View className="mb-1">
+            <Ionicons name={iconName} size={26} color={ICON_COLOR} />
           </View>
-          <Text className="section-label">{title}</Text>
+          <Text className="section-label text-[10px]">{title}</Text>
           <Text
             className="text-white font-semibold mt-0.5 text-sm text-center"
             numberOfLines={2}

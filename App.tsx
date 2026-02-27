@@ -17,6 +17,7 @@ import type { GridItem } from "./src/components/ConditionsGrid";
 import { MetricEducationModal } from "./src/components/MetricEducationModal";
 import { WeightClassDropdown } from "./src/components/WeightClassDropdown";
 import { MapPlaceholderCard } from "./src/components/MapPlaceholderCard";
+import { LocationPickerModal } from "./src/components/LocationPickerModal";
 import { useLocation } from "./src/hooks/useLocation";
 import { useWeather } from "./src/hooks/useWeather";
 import { useRevenueCat } from "./src/hooks/useRevenueCat";
@@ -42,9 +43,13 @@ export default function App() {
   const {
     coords,
     placeName,
+    devicePlaceName,
     error: locationError,
     loading: locationLoading,
+    setPickedLocation,
+    clearPickedLocation,
   } = useLocation();
+  const [locationPickerVisible, setLocationPickerVisible] = useState(false);
   const env = useMemo(() => getWeatherKitEnv(), []);
   const {
     data: weather,
@@ -166,14 +171,39 @@ export default function App() {
             contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
           >
             {coords && (
-              <View className="flex-row items-center gap-2 mb-3">
-                <Ionicons name="location" size={16} color="#94a3b8" />
-                <Text className="text-slate-400 text-sm" numberOfLines={1}>
-                  {placeName ??
-                    `${coords.latitude.toFixed(2)}°, ${coords.longitude.toFixed(2)}°`}
-                </Text>
+              <View className="flex-row items-center justify-between mb-3 py-1.5">
+                <Pressable
+                  onPress={() => setLocationPickerVisible(true)}
+                  className="flex-row items-center gap-2 flex-1 min-w-0 rounded-lg active:opacity-80"
+                >
+                  <Ionicons name="location" size={16} color="#94a3b8" />
+                  <Text className="text-slate-400 text-sm flex-1" numberOfLines={1}>
+                    {placeName ??
+                      `${coords.latitude.toFixed(2)}°, ${coords.longitude.toFixed(2)}°`}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {}}
+                  className="p-2 -m-2 rounded-lg active:opacity-70"
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
+                  <Ionicons name="settings-outline" size={22} color="#94a3b8" />
+                </Pressable>
               </View>
             )}
+            <LocationPickerModal
+              visible={locationPickerVisible}
+              onClose={() => setLocationPickerVisible(false)}
+              onSelect={(loc) => {
+                setPickedLocation(loc);
+                setLocationPickerVisible(false);
+              }}
+              onUseCurrent={() => {
+                clearPickedLocation();
+                setLocationPickerVisible(false);
+              }}
+              currentPlaceName={devicePlaceName}
+            />
             {weather && (
               <View className="mb-4">
                 <FlightOverviewHero
