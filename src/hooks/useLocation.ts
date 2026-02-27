@@ -8,10 +8,12 @@ export interface LocationCoords {
 
 export function useLocation(): {
   coords: LocationCoords | null;
+  placeName: string | null;
   error: string | null;
   loading: boolean;
 } {
   const [coords, setCoords] = useState<LocationCoords | null>(null);
+  const [placeName, setPlaceName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -31,10 +33,19 @@ export function useLocation(): {
           accuracy: Location.Accuracy.High,
         });
         if (cancelled) return;
-        setCoords({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        });
+        const { latitude, longitude } = location.coords;
+        setCoords({ latitude, longitude });
+
+        try {
+          const [address] = await Location.reverseGeocodeAsync({ latitude, longitude });
+          if (cancelled) return;
+          if (address) {
+            const parts = [address.city, address.region, address.country].filter(Boolean);
+            setPlaceName(parts.length > 0 ? parts.join(', ') : null);
+          }
+        } catch {
+          // Keep placeName null; we can show coords instead
+        }
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : 'Failed to get location');
@@ -48,5 +59,5 @@ export function useLocation(): {
     return () => { cancelled = true; };
   }, []);
 
-  return { coords, error, loading };
+  return { coords, placeName, error, loading };
 }

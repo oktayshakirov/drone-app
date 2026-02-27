@@ -59,6 +59,16 @@ interface RawHourly {
   temperature?: number;
 }
 
+/**
+ * Raw WeatherKit daily forecast day (sun times come from here, not currentWeather).
+ */
+interface RawDayForecast {
+  forecastStart?: string;
+  sunrise?: string;
+  sunset?: string;
+  sun?: { sunrise?: string; sunset?: string };
+}
+
 function mapWind(raw: RawCurrentWeather): WindConditions {
   return {
     speedMps: raw.windSpeed ?? 0,
@@ -108,7 +118,7 @@ export async function fetchWeather(
 ): Promise<WeatherData> {
   const token = await getToken(env);
   const lang = "en";
-  const datasets = "currentWeather,forecastHourly";
+  const datasets = "currentWeather,forecastHourly,forecastDaily";
   const url = `${WEATHERKIT_BASE}/weather/${lang}/${latitude}/${longitude}?dataSets=${datasets}`;
 
   const res = await fetch(url, {
@@ -130,10 +140,19 @@ export async function fetchWeather(
 
   const currentRaw = (json.currentWeather as RawCurrentWeather) ?? {};
   const hourlyRaw = (json.forecastHourly?.hours as RawHourly[]) ?? [];
+  const forecastDaily = json.forecastDaily as { days?: RawDayForecast[] } | RawDayForecast[] | undefined;
+  const dailyDays = Array.isArray(forecastDaily)
+    ? forecastDaily
+    : (forecastDaily?.days ?? []);
   const current = mapCurrent(currentRaw);
   const nextHour = hourlyRaw[0];
   if (nextHour?.precipitationChance != null) {
     current.precipitationChancePercent = nextHour.precipitationChance;
+  }
+  const today = dailyDays[0];
+  if (today) {
+    current.sunrise = today.sunrise ?? today.sun?.sunrise ?? current.sunrise;
+    current.sunset = today.sunset ?? today.sun?.sunset ?? current.sunset;
   }
 
   return {

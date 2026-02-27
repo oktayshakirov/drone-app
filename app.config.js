@@ -38,6 +38,8 @@ module.exports = {
       weatherKitServiceId: process.env.WEATHERKIT_SERVICE_ID,
       weatherKitKeyId: process.env.WEATHERKIT_KEY_ID,
       weatherKitPrivateKey: process.env.WEATHERKIT_PRIVATE_KEY,
+      revenueCatApiKeyIos: process.env.REVENUECAT_API_KEY_IOS ?? process.env.REVENUECAT_API_KEY,
+      revenueCatApiKeyAndroid: process.env.REVENUECAT_API_KEY_ANDROID ?? process.env.REVENUECAT_API_KEY,
     },
   },
 };

@@ -50,3 +50,19 @@ export function degreesToCardinal(deg: number | null): string {
   const i = Math.round(deg / 22.5) % 16;
   return cards[i];
 }
+
+/** Format ISO date-time string as short time (e.g. "6:45 AM") for sunrise/sunset. */
+export function formatSunTime(isoString: string | null): string {
+  if (!isoString) return '—';
+  try {
+    const d = new Date(isoString);
+    if (Number.isNaN(d.getTime())) return '—';
+    const hours = d.getHours();
+    const mins = d.getMinutes();
+    const am = hours < 12;
+    const h = hours % 12 || 12;
+    return `${h}:${mins.toString().padStart(2, '0')} ${am ? 'AM' : 'PM'}`;
+  } catch {
+    return '—';
+  }
+}
