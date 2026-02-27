@@ -69,11 +69,18 @@ export function SettingsModal({
               <Ionicons name="close" size={24} color="#94a3b8" />
             </Pressable>
           </View>
-          <ScrollView className="px-4 pb-8" showsVerticalScrollIndicator={false}>
+          <ScrollView
+            className="px-4 pb-8"
+            showsVerticalScrollIndicator={false}
+          >
             {/* General units */}
             <View className="mb-4">
               <View className="flex-row items-center gap-2 mb-2">
-                <Ionicons name="thermometer-outline" size={20} color="#94a3b8" />
+                <Ionicons
+                  name="thermometer-outline"
+                  size={20}
+                  color="#94a3b8"
+                />
                 <Text className="section-label">Units</Text>
               </View>
               <View className="rounded-xl border border-border overflow-hidden">

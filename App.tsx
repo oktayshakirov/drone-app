@@ -180,7 +180,10 @@ function AppContent() {
                   className="flex-row items-center gap-2 flex-1 min-w-0 rounded-lg active:opacity-80"
                 >
                   <Ionicons name="location" size={16} color="#94a3b8" />
-                  <Text className="text-slate-400 text-sm flex-1" numberOfLines={1}>
+                  <Text
+                    className="text-slate-400 text-sm flex-1"
+                    numberOfLines={1}
+                  >
                     {placeName ??
                       `${coords.latitude.toFixed(2)}°, ${coords.longitude.toFixed(2)}°`}
                   </Text>
@@ -212,7 +215,9 @@ function AppContent() {
                 <FlightOverviewHero
                   conditionCode={weather.current.conditionCode}
                   temperatureCelsius={weather.current.temperatureCelsius}
-                  formatTemp={(c) => formatTemp(c, settings.units === "imperial")}
+                  formatTemp={(c) =>
+                    formatTemp(c, settings.units === "imperial")
+                  }
                 />
               </View>
             )}

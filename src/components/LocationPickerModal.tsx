@@ -135,7 +135,9 @@ export function LocationPickerModal({
               </View>
             )}
             {searchError && (
-              <Text className="text-danger-red text-sm mb-2">{searchError}</Text>
+              <Text className="text-danger-red text-sm mb-2">
+                {searchError}
+              </Text>
             )}
             {currentPlaceName && (
               <TouchableOpacity
@@ -145,8 +147,13 @@ export function LocationPickerModal({
               >
                 <Ionicons name="locate" size={22} color="#94a3b8" />
                 <View className="flex-1">
-                  <Text className="text-white font-medium">Use current location</Text>
-                  <Text className="text-slate-400 text-sm mt-0.5" numberOfLines={1}>
+                  <Text className="text-white font-medium">
+                    Use current location
+                  </Text>
+                  <Text
+                    className="text-slate-400 text-sm mt-0.5"
+                    numberOfLines={1}
+                  >
                     {currentPlaceName}
                   </Text>
                 </View>
@@ -155,7 +162,9 @@ export function LocationPickerModal({
             {!searching && results.length > 0 && (
               <FlatList
                 data={results}
-                keyExtractor={(item) => `${item.lat}-${item.lon}-${item.display_name}`}
+                keyExtractor={(item) =>
+                  `${item.lat}-${item.lon}-${item.display_name}`
+                }
                 className="max-h-64"
                 keyboardShouldPersistTaps="handled"
                 renderItem={({ item }) => (
@@ -171,11 +180,14 @@ export function LocationPickerModal({
                 )}
               />
             )}
-            {!searching && query.trim().length > 0 && results.length === 0 && !searchError && (
-              <Text className="text-slate-400 text-sm py-4">
-                No places found. Try a different search.
-              </Text>
-            )}
+            {!searching &&
+              query.trim().length > 0 &&
+              results.length === 0 &&
+              !searchError && (
+                <Text className="text-slate-400 text-sm py-4">
+                  No places found. Try a different search.
+                </Text>
+              )}
           </View>
         </Pressable>
       </Pressable>
