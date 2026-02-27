@@ -64,11 +64,13 @@ export function WeatherBox({
               </Text>
             </View>
           </View>
-          <Ionicons
-            name="information-circle-outline"
-            size={22}
-            color={ICON_COLOR}
-          />
+          {!["wind", "visibility", "sunriseSunset"].includes(metricKey) && (
+            <Ionicons
+              name="information-circle-outline"
+              size={22}
+              color={ICON_COLOR}
+            />
+          )}
         </>
       )}
     </TouchableOpacity>

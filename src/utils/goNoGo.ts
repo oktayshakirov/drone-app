@@ -1,5 +1,9 @@
-import type { CurrentWeatherSummary, DroneClassThresholds, SafetyStatus } from '../types/weather';
-import { mpsToMph } from './conversions';
+import type {
+  CurrentWeatherSummary,
+  DroneClassThresholds,
+  SafetyStatus,
+} from "../types/weather";
+import { mpsToMph } from "./conversions";
 
 /**
  * Evaluate Go/No-Go status from current weather and selected drone class thresholds.
@@ -7,18 +11,27 @@ import { mpsToMph } from './conversions';
  */
 export function evaluateSafety(
   current: CurrentWeatherSummary,
-  thresholds: DroneClassThresholds
+  thresholds: DroneClassThresholds,
 ): SafetyStatus {
-  const windGustMph = current.wind.gustMps != null ? mpsToMph(current.wind.gustMps) : mpsToMph(current.wind.speedMps);
+  const windGustMph =
+    current.wind.gustMps != null
+      ? mpsToMph(current.wind.gustMps)
+      : mpsToMph(current.wind.speedMps);
   const windSpeedMph = mpsToMph(current.wind.speedMps);
   const visibilityM = current.visibilityMeters ?? 10000;
   const precipChance = current.precipitationChancePercent ?? 0;
 
-  if (windGustMph > thresholds.windGustMphRed || visibilityM < thresholds.visibilityMetersRed) {
-    return 'red';
+  if (
+    windGustMph > thresholds.windGustMphRed ||
+    visibilityM < thresholds.visibilityMetersRed
+  ) {
+    return "red";
   }
-  if (windSpeedMph > thresholds.windSpeedMphYellow || precipChance > thresholds.precipitationChanceYellow) {
-    return 'yellow';
+  if (
+    windSpeedMph > thresholds.windSpeedMphYellow ||
+    precipChance > thresholds.precipitationChanceYellow
+  ) {
+    return "yellow";
   }
-  return 'green';
+  return "green";
 }

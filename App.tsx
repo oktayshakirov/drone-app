@@ -15,18 +15,16 @@ import { FlightOverviewHero } from "./src/components/FlightOverviewHero";
 import { ConditionsGrid } from "./src/components/ConditionsGrid";
 import type { GridItem } from "./src/components/ConditionsGrid";
 import { MetricEducationModal } from "./src/components/MetricEducationModal";
-import { WeightClassDropdown } from "./src/components/WeightClassDropdown";
 import { MapPlaceholderCard } from "./src/components/MapPlaceholderCard";
 import { LocationPickerModal } from "./src/components/LocationPickerModal";
+import { SettingsModal } from "./src/components/SettingsModal";
+import { SettingsProvider, useSettings } from "./src/contexts/SettingsContext";
 import { useLocation } from "./src/hooks/useLocation";
 import { useWeather } from "./src/hooks/useWeather";
 import { useRevenueCat } from "./src/hooks/useRevenueCat";
 import { getWeatherKitEnv } from "./src/utils/env";
-import { getThresholdsForClass } from "./src/constants/droneClasses";
-import { evaluateSafety } from "./src/utils/goNoGo";
 import {
-  mpsToMph,
-  formatWindMph,
+  formatWind,
   formatVisibility,
   formatVisibilityMeters,
   formatTemp,
@@ -34,12 +32,20 @@ import {
   formatSunTime,
   degreesToCardinal,
 } from "./src/utils/conversions";
-import type { WeightClassId } from "./src/types/weather";
-
 export default function App() {
-  const [weightClass, setWeightClass] = useState<WeightClassId>("sub250");
-  const [educationMetric, setEducationMetric] = useState<string | null>(null);
+  return (
+    <SettingsProvider>
+      <AppContent />
+    </SettingsProvider>
+  );
+}
 
+function AppContent() {
+  const [educationMetric, setEducationMetric] = useState<string | null>(null);
+  const [locationPickerVisible, setLocationPickerVisible] = useState(false);
+  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
+
+  const { settings, setUnits, setWindUnit, setTimeFormat } = useSettings();
   const {
     coords,
     placeName,
@@ -49,7 +55,6 @@ export default function App() {
     setPickedLocation,
     clearPickedLocation,
   } = useLocation();
-  const [locationPickerVisible, setLocationPickerVisible] = useState(false);
   const env = useMemo(() => getWeatherKitEnv(), []);
   const {
     data: weather,
@@ -57,11 +62,6 @@ export default function App() {
     loading: weatherLoading,
     isMock,
   } = useWeather(coords?.latitude ?? null, coords?.longitude ?? null, env);
-
-  const thresholds = getThresholdsForClass(weightClass);
-  const safetyStatus = weather
-    ? evaluateSafety(weather.current, thresholds)
-    : "green";
 
   const {
     isPro,
@@ -76,10 +76,11 @@ export default function App() {
   const conditionsGridItems = useMemo((): GridItem[] => {
     if (!weather) return [];
     const c = weather.current;
+    const useImperial = settings.units === "imperial";
     return [
       {
         title: "Wind",
-        value: `${formatWindMph(mpsToMph(c.wind.speedMps))} gust ${c.wind.gustMps != null ? formatWindMph(mpsToMph(c.wind.gustMps)) : "—"} · ${degreesToCardinal(c.wind.directionDegrees)}`,
+        value: `${formatWind(c.wind.speedMps, settings.windUnit)} gust ${c.wind.gustMps != null ? formatWind(c.wind.gustMps, settings.windUnit) : "—"} · ${degreesToCardinal(c.wind.directionDegrees)}`,
         metricKey: "wind",
         shape: "wide",
       },
@@ -87,14 +88,16 @@ export default function App() {
         title: "Visibility",
         value:
           c.visibilityMeters != null
-            ? `${formatVisibility(c.visibilityMeters)} (${formatVisibilityMeters(c.visibilityMeters)})`
+            ? useImperial
+              ? `${formatVisibility(c.visibilityMeters)} (${formatVisibilityMeters(c.visibilityMeters)})`
+              : `${formatVisibilityMeters(c.visibilityMeters)} (${formatVisibility(c.visibilityMeters)})`
             : "—",
         metricKey: "visibility",
         shape: "wide",
       },
       {
         title: "Temperature",
-        value: formatTemp(c.temperatureCelsius, false),
+        value: formatTemp(c.temperatureCelsius, useImperial),
         metricKey: "temperature",
         shape: "cube",
       },
@@ -129,16 +132,16 @@ export default function App() {
         shape: "cube",
       },
       {
-        title: "Sunrise / Sunset",
+        title: "Sunshine time",
         value:
           c.sunrise && c.sunset
-            ? `${formatSunTime(c.sunrise)} / ${formatSunTime(c.sunset)}`
+            ? `${formatSunTime(c.sunrise, settings.timeFormat === "24h")} / ${formatSunTime(c.sunset, settings.timeFormat === "24h")}`
             : "—",
         metricKey: "sunriseSunset",
         shape: "wide",
       },
     ];
-  }, [weather]);
+  }, [weather, settings.units, settings.windUnit, settings.timeFormat]);
 
   const loading = locationLoading || weatherLoading;
   const error = locationError ?? weatherError;
@@ -183,7 +186,7 @@ export default function App() {
                   </Text>
                 </Pressable>
                 <Pressable
-                  onPress={() => {}}
+                  onPress={() => setSettingsModalVisible(true)}
                   className="p-2 -m-2 rounded-lg active:opacity-70"
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 >
@@ -209,18 +212,10 @@ export default function App() {
                 <FlightOverviewHero
                   conditionCode={weather.current.conditionCode}
                   temperatureCelsius={weather.current.temperatureCelsius}
-                  safetyStatus={safetyStatus}
-                  formatTemp={formatTemp}
+                  formatTemp={(c) => formatTemp(c, settings.units === "imperial")}
                 />
               </View>
             )}
-
-            <View className="mb-4">
-              <WeightClassDropdown
-                selectedId={weightClass}
-                onSelect={setWeightClass}
-              />
-            </View>
 
             {error && (
               <View className="mt-4 p-3 rounded-lg bg-danger-red/20">
@@ -303,6 +298,14 @@ export default function App() {
             visible={educationMetric != null}
             metricKey={educationMetric}
             onClose={() => setEducationMetric(null)}
+          />
+          <SettingsModal
+            visible={settingsModalVisible}
+            onClose={() => setSettingsModalVisible(false)}
+            settings={settings}
+            setUnits={setUnits}
+            setWindUnit={setWindUnit}
+            setTimeFormat={setTimeFormat}
           />
         </SafeAreaView>
       </LinearGradient>
