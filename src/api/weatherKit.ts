@@ -28,6 +28,12 @@ async function getToken(env: WeatherKitEnv): Promise<string> {
 }
 
 /**
+ * WeatherKit REST API returns wind speed in km/h (per common convention).
+ * We convert to m/s for internal use and display conversions.
+ */
+const KMH_TO_MPS = 1 / 3.6;
+
+/**
  * Raw WeatherKit current weather response (minimal shape for mapping).
  */
 interface RawCurrentWeather {
@@ -70,9 +76,11 @@ interface RawDayForecast {
 }
 
 function mapWind(raw: RawCurrentWeather): WindConditions {
+  const speedKmh = raw.windSpeed ?? 0;
+  const gustKmh = raw.windGust;
   return {
-    speedMps: raw.windSpeed ?? 0,
-    gustMps: raw.windGust ?? null,
+    speedMps: speedKmh * KMH_TO_MPS,
+    gustMps: gustKmh != null ? gustKmh * KMH_TO_MPS : null,
     directionDegrees: raw.windDirection ?? null,
   };
 }
@@ -92,14 +100,17 @@ function mapCurrent(raw: RawCurrentWeather): CurrentWeatherSummary {
     precipitationType: raw.precipitation?.precipitationType ?? null,
     sunrise: raw.sunrise ?? null,
     sunset: raw.sunset ?? null,
+    kpIndex: null, // WeatherKit does not provide; use separate Kp API if needed
   };
 }
 
 function mapHourly(raw: RawHourly): HourlyForecastItem {
+  const speedKmh = raw.windSpeed ?? 0;
+  const gustKmh = raw.windGust;
   return {
     date: raw.forecastStart ?? "",
-    windSpeedMps: raw.windSpeed ?? 0,
-    windGustMps: raw.windGust ?? null,
+    windSpeedMps: speedKmh * KMH_TO_MPS,
+    windGustMps: gustKmh != null ? gustKmh * KMH_TO_MPS : null,
     windDirectionDegrees: raw.windDirection ?? null,
     cloudCoverPercent: raw.cloudCover ?? null,
     precipitationChancePercent: raw.precipitationChance ?? null,

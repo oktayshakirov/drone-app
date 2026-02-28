@@ -24,6 +24,7 @@ export interface CurrentWeatherSummary {
   precipitationType: string | null;
   sunrise: string | null; // ISO
   sunset: string | null;  // ISO
+  kpIndex: number | null; // Geomagnetic Kp index (0–9), space weather
 }
 
 export interface HourlyForecastItem {

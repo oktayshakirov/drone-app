@@ -27,21 +27,28 @@ export function formatWindMph(mph: number): string {
   return `${Math.round(mph)} mph`;
 }
 
+/** Format wind speed from m/s to the selected unit (one decimal for consistency). */
 export function formatWind(
   mps: number,
   unit: "mph" | "kmh" | "ms" | "knots",
 ): string {
   switch (unit) {
-    case "mph":
-      return `${Math.round(mpsToMph(mps))} mph`;
-    case "kmh":
-      return `${Math.round(mpsToKmh(mps))} km/h`;
+    case "mph": {
+      const mph = mpsToMph(mps);
+      return `${mph.toFixed(1)} mph`;
+    }
+    case "kmh": {
+      const kmh = mpsToKmh(mps);
+      return `${kmh.toFixed(1)} km/h`;
+    }
     case "ms":
-      return `${Math.round(mps * 10) / 10} m/s`;
-    case "knots":
-      return `${Math.round(mpsToKnots(mps))} kt`;
+      return `${mps.toFixed(1)} m/s`;
+    case "knots": {
+      const kt = mpsToKnots(mps);
+      return `${kt.toFixed(1)} kt`;
+    }
     default:
-      return formatWindMph(mpsToMph(mps));
+      return `${mpsToMph(mps).toFixed(1)} mph`;
   }
 }
 

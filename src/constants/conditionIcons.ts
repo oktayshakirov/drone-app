@@ -3,13 +3,15 @@
  */
 export const CONDITION_ICONS: Record<string, string> = {
   wind: 'leaf-outline',
+  gust: 'flag-outline',
+  windDirection: 'compass-outline',
   visibility: 'eye-outline',
   temperature: 'thermometer-outline',
   humidity: 'water-outline',
   cloudCover: 'cloud-outline',
-  pressure: 'speedometer-outline',
   precipitation: 'rainy-outline',
   uvIndex: 'sunny-outline',
+  kpIndex: 'magnet-outline',
   sunriseSunset: 'partly-sunny-outline',
 };
 

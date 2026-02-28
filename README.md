@@ -33,8 +33,8 @@ The project already uses `dotenv` in `app.config.js`, so `.env` is loaded automa
 ## Project structure
 
 - `src/api` — WeatherKit client, mock weather
-- `src/components` — Safety Gauge, Weather Cards, Weight Class selector, Metric education modal, placeholders
-- `src/constants` — Drone weight classes & thresholds, metric education copy
+- `src/components` — Safety Gauge, Weather Cards, Weight Class selector, Metric info modal, placeholders
+- `src/constants` — Drone weight classes & thresholds, metric info copy
 - `src/hooks` — useLocation, useWeather
 - `src/types` — Weather & safety types
 - `src/utils` — JWT (WeatherKit), conversions, Go/No-Go evaluation, env

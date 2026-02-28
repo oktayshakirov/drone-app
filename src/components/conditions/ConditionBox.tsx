@@ -1,28 +1,34 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { getConditionIcon } from "../constants/conditionIcons";
+import { getConditionIcon } from "../../constants/conditionIcons";
+import type { ConditionBoxShape } from "./types";
+import { BOX_HEIGHT } from "./types";
 
-export type WeatherBoxShape = "cube" | "wide";
-
-const ICON_SIZE = 20;
+const ICON_SIZE_CUBE = 22;
+const ICON_SIZE_WIDE = 20;
 const ICON_COLOR = "#94a3b8";
 
-interface WeatherBoxProps {
+export interface ConditionBoxProps {
   title: string;
   value: string;
   metricKey: string;
-  shape: WeatherBoxShape;
+  shape: ConditionBoxShape;
   onPress: (metricKey: string) => void;
 }
 
-export function WeatherBox({
+/**
+ * Reusable condition box. Two layouts:
+ * - cube: centered icon, label, value (same height as wide).
+ * - wide: horizontal layout, icon + text (width = 2 cubes).
+ */
+export function ConditionBox({
   title,
   value,
   metricKey,
   shape,
   onPress,
-}: WeatherBoxProps) {
+}: ConditionBoxProps) {
   const isCube = shape === "cube";
   const iconName = getConditionIcon(metricKey) as React.ComponentProps<
     typeof Ionicons
@@ -32,13 +38,17 @@ export function WeatherBox({
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={() => onPress(metricKey)}
-      style={isCube ? styles.cube : undefined}
-      className={`condition-box ${isCube ? "flex-1 justify-center min-h-[56px] p-2" : "flex-row items-center justify-between"}`}
+      className="condition-box flex-1 min-h-0 min-w-0 rounded-xl border border-border bg-card p-3"
+      style={{ minHeight: BOX_HEIGHT }}
     >
       {isCube ? (
-        <View className="items-center justify-center">
+        <View className="flex-1 items-center justify-center">
           <View className="mb-1">
-            <Ionicons name={iconName} size={26} color={ICON_COLOR} />
+            <Ionicons
+              name={iconName}
+              size={ICON_SIZE_CUBE}
+              color={ICON_COLOR}
+            />
           </View>
           <Text className="section-label text-[10px]">{title}</Text>
           <Text
@@ -49,10 +59,14 @@ export function WeatherBox({
           </Text>
         </View>
       ) : (
-        <>
+        <View className="flex-1 flex-row items-center justify-between gap-3">
           <View className="flex-row items-center gap-3 flex-1 min-w-0">
-            <View className="w-9 h-9 rounded-lg bg-surface/80 items-center justify-center">
-              <Ionicons name={iconName} size={ICON_SIZE} color={ICON_COLOR} />
+            <View className="w-9 h-9 rounded-lg bg-surface/80 items-center justify-center flex-shrink-0">
+              <Ionicons
+                name={iconName}
+                size={ICON_SIZE_WIDE}
+                color={ICON_COLOR}
+              />
             </View>
             <View className="flex-1 min-w-0">
               <Text className="section-label">{title}</Text>
@@ -64,19 +78,17 @@ export function WeatherBox({
               </Text>
             </View>
           </View>
-          {!["wind", "visibility", "sunriseSunset"].includes(metricKey) && (
+
+          {metricKey !== "wind" && (
             <Ionicons
               name="information-circle-outline"
               size={22}
               color={ICON_COLOR}
+              style={{ flexShrink: 0 }}
             />
           )}
-        </>
+        </View>
       )}
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  cube: { aspectRatio: 1 },
-});

@@ -23,6 +23,7 @@ export function getMockWeather(): WeatherData {
       precipitationType: null,
       sunrise: '2025-02-25T06:45:00Z',
       sunset: '2025-02-25T17:30:00Z',
+      kpIndex: 2,
     },
     hourly: Array.from({ length: 24 }, (_, i) => ({
       date: new Date(Date.now() + i * 3600000).toISOString(),

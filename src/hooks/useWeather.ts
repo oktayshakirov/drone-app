@@ -3,6 +3,7 @@ import type { WeatherData } from "../types/weather";
 import { fetchWeather } from "../api/weatherKit";
 import type { WeatherKitEnv } from "../api/weatherKit";
 import { getMockWeather } from "../api/mockWeather";
+import { fetchCurrentKpIndex } from "../api/kpIndex";
 
 export function useWeather(
   latitude: number | null,
@@ -38,7 +39,13 @@ export function useWeather(
     setError(null);
     setIsMock(false);
     fetchWeather(latitude, longitude, env)
-      .then(setData)
+      .then(async (weather) => {
+        const kp = await fetchCurrentKpIndex();
+        setData({
+          ...weather,
+          current: { ...weather.current, kpIndex: kp },
+        });
+      })
       .catch((e) =>
         setError(e instanceof Error ? e.message : "Weather fetch failed"),
       )

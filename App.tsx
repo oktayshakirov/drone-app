@@ -11,11 +11,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
-import { FlightOverviewHero } from "./src/components/FlightOverviewHero";
-import { ConditionsGrid } from "./src/components/ConditionsGrid";
-import type { GridItem } from "./src/components/ConditionsGrid";
-import { MetricEducationModal } from "./src/components/MetricEducationModal";
-import { MapPlaceholderCard } from "./src/components/MapPlaceholderCard";
+import { OverviewHero } from "./src/components/OverviewHero";
+import { ConditionsGrid, type GridItem } from "./src/components/conditions";
+import { InfoModal } from "./src/components/InfoModal";
 import { LocationPickerModal } from "./src/components/LocationPickerModal";
 import { SettingsModal } from "./src/components/SettingsModal";
 import { SettingsProvider, useSettings } from "./src/contexts/SettingsContext";
@@ -41,7 +39,7 @@ export default function App() {
 }
 
 function AppContent() {
-  const [educationMetric, setEducationMetric] = useState<string | null>(null);
+  const [infoMetric, setInfoMetric] = useState<string | null>(null);
   const [locationPickerVisible, setLocationPickerVisible] = useState(false);
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
 
@@ -80,20 +78,24 @@ function AppContent() {
     return [
       {
         title: "Wind",
-        value: `${formatWind(c.wind.speedMps, settings.windUnit)} gust ${c.wind.gustMps != null ? formatWind(c.wind.gustMps, settings.windUnit) : "—"} · ${degreesToCardinal(c.wind.directionDegrees)}`,
+        value: formatWind(c.wind.speedMps, settings.windUnit),
         metricKey: "wind",
-        shape: "wide",
+        shape: "cube",
       },
       {
-        title: "Visibility",
+        title: "Gust",
         value:
-          c.visibilityMeters != null
-            ? useImperial
-              ? `${formatVisibility(c.visibilityMeters)} (${formatVisibilityMeters(c.visibilityMeters)})`
-              : `${formatVisibilityMeters(c.visibilityMeters)} (${formatVisibility(c.visibilityMeters)})`
+          c.wind.gustMps != null
+            ? formatWind(c.wind.gustMps, settings.windUnit)
             : "—",
-        metricKey: "visibility",
-        shape: "wide",
+        metricKey: "gust",
+        shape: "cube",
+      },
+      {
+        title: "Wind direction",
+        value: degreesToCardinal(c.wind.directionDegrees),
+        metricKey: "windDirection",
+        shape: "cube",
       },
       {
         title: "Temperature",
@@ -114,12 +116,6 @@ function AppContent() {
         shape: "cube",
       },
       {
-        title: "Pressure",
-        value: c.pressureHpa != null ? `${c.pressureHpa} hPa` : "—",
-        metricKey: "pressure",
-        shape: "cube",
-      },
-      {
         title: "Precipitation",
         value: formatPercent(c.precipitationChancePercent),
         metricKey: "precipitation",
@@ -132,6 +128,12 @@ function AppContent() {
         shape: "cube",
       },
       {
+        title: "Kp index",
+        value: c.kpIndex != null ? String(c.kpIndex) : "—",
+        metricKey: "kpIndex",
+        shape: "cube",
+      },
+      {
         title: "Sunshine time",
         value:
           c.sunrise && c.sunset
@@ -139,6 +141,19 @@ function AppContent() {
             : "—",
         metricKey: "sunriseSunset",
         shape: "wide",
+        sunrise: c.sunrise ?? undefined,
+        sunset: c.sunset ?? undefined,
+      },
+      {
+        title: "Visibility",
+        value:
+          c.visibilityMeters != null
+            ? useImperial
+              ? formatVisibility(c.visibilityMeters)
+              : formatVisibilityMeters(c.visibilityMeters)
+            : "—",
+        metricKey: "visibility",
+        shape: "cube",
       },
     ];
   }, [weather, settings.units, settings.windUnit, settings.timeFormat]);
@@ -212,13 +227,7 @@ function AppContent() {
             />
             {weather && (
               <View className="mb-4">
-                <FlightOverviewHero
-                  conditionCode={weather.current.conditionCode}
-                  temperatureCelsius={weather.current.temperatureCelsius}
-                  formatTemp={(c) =>
-                    formatTemp(c, settings.units === "imperial")
-                  }
-                />
+                <OverviewHero conditionCode={weather.current.conditionCode} />
               </View>
             )}
 
@@ -241,50 +250,10 @@ function AppContent() {
               <View className="mt-4">
                 <ConditionsGrid
                   items={conditionsGridItems}
-                  onMetricPress={setEducationMetric}
+                  onMetricPress={setInfoMetric}
+                  formatSunTime={formatSunTime}
+                  use24h={settings.timeFormat === "24h"}
                 />
-              </View>
-            )}
-
-            <View className="mt-4">
-              <MapPlaceholderCard />
-            </View>
-
-            {revenueCatAvailable && (
-              <View className="mt-6 pt-4 border-t border-border">
-                {isPro ? (
-                  <Text className="text-slate-400 text-xs text-center mb-2">
-                    Drone Pal Pro active
-                  </Text>
-                ) : (
-                  <Pressable
-                    onPress={showPaywall}
-                    className="rounded-lg border border-border bg-card py-2.5 px-4 mb-2"
-                  >
-                    <Text className="text-white text-sm font-semibold text-center">
-                      Drone Pal Pro — Subscribe
-                    </Text>
-                  </Pressable>
-                )}
-                <Pressable
-                  onPress={async () => {
-                    if (isPro) await showCustomerCenter();
-                    else {
-                      const { success } = await restore();
-                      if (!success) await showCustomerCenter();
-                    }
-                  }}
-                  className="py-2"
-                >
-                  <Text className="text-slate-500 text-xs text-center underline">
-                    {isPro ? "Manage subscription" : "Restore purchases"}
-                  </Text>
-                </Pressable>
-                {revenueCatError && (
-                  <Text className="text-slate-500 text-[10px] text-center mt-1">
-                    {revenueCatError.message}
-                  </Text>
-                )}
               </View>
             )}
 
@@ -299,10 +268,10 @@ function AppContent() {
             </View>
           </ScrollView>
 
-          <MetricEducationModal
-            visible={educationMetric != null}
-            metricKey={educationMetric}
-            onClose={() => setEducationMetric(null)}
+          <InfoModal
+            visible={infoMetric != null}
+            metricKey={infoMetric}
+            onClose={() => setInfoMetric(null)}
           />
           <SettingsModal
             visible={settingsModalVisible}
