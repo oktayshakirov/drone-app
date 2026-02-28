@@ -45,7 +45,8 @@ function AppContent() {
   const [mapModalVisible, setMapModalVisible] = useState(false);
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
 
-  const { settings, setUnits, setWindUnit, setTimeFormat } = useSettings();
+  const { settings, setUnits, setWindUnit, setTimeFormat, setCompassEnabled } =
+    useSettings();
   const {
     coords,
     placeName,
@@ -98,41 +99,17 @@ function AppContent() {
         value: degreesToCardinal(c.wind.directionDegrees),
         metricKey: "windDirection",
         shape: "cube",
+        directionDegrees: c.wind.directionDegrees ?? undefined,
       },
       {
-        title: "Temperature",
-        value: formatTemp(c.temperatureCelsius, useImperial),
-        metricKey: "temperature",
-        shape: "cube",
-      },
-      {
-        title: "Humidity",
-        value: formatPercent(c.humidityPercent),
-        metricKey: "humidity",
-        shape: "cube",
-      },
-      {
-        title: "Cloud cover",
-        value: formatPercent(c.cloudCoverPercent),
-        metricKey: "cloudCover",
-        shape: "cube",
-      },
-      {
-        title: "Precipitation",
-        value: formatPercent(c.precipitationChancePercent),
-        metricKey: "precipitation",
-        shape: "cube",
-      },
-      {
-        title: "UV index",
-        value: c.uvIndex != null ? String(c.uvIndex) : "—",
-        metricKey: "uvIndex",
-        shape: "cube",
-      },
-      {
-        title: "Kp index",
-        value: c.kpIndex != null ? String(c.kpIndex) : "—",
-        metricKey: "kpIndex",
+        title: "Visibility",
+        value:
+          c.visibilityMeters != null
+            ? useImperial
+              ? formatVisibility(c.visibilityMeters)
+              : formatVisibilityMeters(c.visibilityMeters)
+            : "—",
+        metricKey: "visibility",
         shape: "cube",
       },
       {
@@ -147,14 +124,39 @@ function AppContent() {
         sunset: c.sunset ?? undefined,
       },
       {
-        title: "Visibility",
-        value:
-          c.visibilityMeters != null
-            ? useImperial
-              ? formatVisibility(c.visibilityMeters)
-              : formatVisibilityMeters(c.visibilityMeters)
-            : "—",
-        metricKey: "visibility",
+        title: "Precipitation",
+        value: formatPercent(c.precipitationChancePercent),
+        metricKey: "precipitation",
+        shape: "cube",
+      },
+      {
+        title: "Cloud cover",
+        value: formatPercent(c.cloudCoverPercent),
+        metricKey: "cloudCover",
+        shape: "cube",
+      },
+      {
+        title: "Temperature",
+        value: formatTemp(c.temperatureCelsius, useImperial),
+        metricKey: "temperature",
+        shape: "cube",
+      },
+      {
+        title: "Humidity",
+        value: formatPercent(c.humidityPercent),
+        metricKey: "humidity",
+        shape: "cube",
+      },
+      {
+        title: "UV index",
+        value: c.uvIndex != null ? String(c.uvIndex) : "—",
+        metricKey: "uvIndex",
+        shape: "cube",
+      },
+      {
+        title: "Kp index",
+        value: c.kpIndex != null ? String(c.kpIndex) : "—",
+        metricKey: "kpIndex",
         shape: "cube",
       },
       {
@@ -301,6 +303,7 @@ function AppContent() {
             setUnits={setUnits}
             setWindUnit={setWindUnit}
             setTimeFormat={setTimeFormat}
+            setCompassEnabled={setCompassEnabled}
           />
         </SafeAreaView>
       </LinearGradient>

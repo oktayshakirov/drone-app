@@ -7,6 +7,7 @@ interface SettingsContextValue {
   setUnits: (u: Units) => void;
   setWindUnit: (u: WindUnit) => void;
   setTimeFormat: (t: TimeFormat) => void;
+  setCompassEnabled: (enabled: boolean) => void;
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -26,9 +27,13 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     setSettings((s) => ({ ...s, timeFormat }));
   }, []);
 
+  const setCompassEnabled = useCallback((compassEnabled: boolean) => {
+    setSettings((s) => ({ ...s, compassEnabled }));
+  }, []);
+
   return (
     <SettingsContext.Provider
-      value={{ settings, setUnits, setWindUnit, setTimeFormat }}
+      value={{ settings, setUnits, setWindUnit, setTimeFormat, setCompassEnabled }}
     >
       {children}
     </SettingsContext.Provider>

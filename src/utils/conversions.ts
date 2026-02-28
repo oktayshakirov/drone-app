@@ -54,12 +54,10 @@ export function formatWind(
 
 export function formatVisibility(meters: number): string {
   const miles = metresToStatuteMiles(meters);
-  if (miles >= 10) return '10+ mi';
   return `${miles.toFixed(1)} mi`;
 }
 
 export function formatVisibilityMeters(meters: number): string {
-  if (meters >= 10000) return "10+ km";
   return `${(meters / 1000).toFixed(1)} km`;
 }
 
@@ -70,10 +68,8 @@ export function formatVisibilityWithUnits(
 ): string {
   if (useImperial) {
     const miles = metresToStatuteMiles(meters);
-    if (miles >= 10) return "10+ mi";
     return `${miles.toFixed(1)} mi`;
   }
-  if (meters >= 10000) return "10+ km";
   return `${(meters / 1000).toFixed(1)} km`;
 }
 

@@ -27,6 +27,11 @@ const TIME_OPTIONS: { id: TimeFormat; label: string }[] = [
   { id: "24h", label: "24-hour" },
 ];
 
+const COMPASS_OPTIONS: { id: boolean; label: string }[] = [
+  { id: true, label: "On" },
+  { id: false, label: "Off" },
+];
+
 interface SettingsModalProps {
   visible: boolean;
   onClose: () => void;
@@ -34,6 +39,7 @@ interface SettingsModalProps {
   setUnits: (u: Units) => void;
   setWindUnit: (u: WindUnit) => void;
   setTimeFormat: (t: TimeFormat) => void;
+  setCompassEnabled: (enabled: boolean) => void;
 }
 
 export function SettingsModal({
@@ -43,6 +49,7 @@ export function SettingsModal({
   setUnits,
   setWindUnit,
   setTimeFormat,
+  setCompassEnabled,
 }: SettingsModalProps) {
   if (!visible) return null;
 
@@ -156,6 +163,39 @@ export function SettingsModal({
                     <TouchableOpacity
                       key={opt.id}
                       onPress={() => setTimeFormat(opt.id)}
+                      className={`py-3 px-4 border-b border-border/50 last:border-b-0 ${
+                        isSelected ? "bg-slate-600" : ""
+                      }`}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        className={
+                          isSelected
+                            ? "text-white font-medium"
+                            : "text-slate-300"
+                        }
+                      >
+                        {opt.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Compass heading */}
+            <View className="mb-4">
+              <View className="flex-row items-center gap-2 mb-2">
+                <Ionicons name="compass-outline" size={20} color="#94a3b8" />
+                <Text className="section-label">Compass heading</Text>
+              </View>
+              <View className="rounded-xl border border-border overflow-hidden">
+                {COMPASS_OPTIONS.map((opt) => {
+                  const isSelected = settings.compassEnabled === opt.id;
+                  return (
+                    <TouchableOpacity
+                      key={opt.id ? "on" : "off"}
+                      onPress={() => setCompassEnabled(opt.id)}
                       className={`py-3 px-4 border-b border-border/50 last:border-b-0 ${
                         isSelected ? "bg-slate-600" : ""
                       }`}

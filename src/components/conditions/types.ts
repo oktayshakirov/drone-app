@@ -16,6 +16,8 @@ export interface GridItem {
   /** For map wide item: show location preview */
   latitude?: number;
   longitude?: number;
+  /** For wind direction cube: degrees (0–360) for compass */
+  directionDegrees?: number | null;
 }
 
 /** Flex basis: wide = 2 units, cube = 1 unit. Row = 3 units (3 cubes or 1 wide + 1 cube). */

@@ -6,5 +6,7 @@ export { SunshineCurveCard } from "./SunshineCurveCard";
 export type { SunshineCurveCardProps } from "./SunshineCurveCard";
 export { MapCard } from "./MapCard";
 export type { MapCardProps } from "./MapCard";
+export { WindDirectionCard } from "./WindDirectionCard";
+export type { WindDirectionCardProps } from "./WindDirectionCard";
 export type { GridItem, ConditionBoxShape } from "./types";
 export { BOX_HEIGHT, CUBE_FLEX, WIDE_FLEX } from "./types";

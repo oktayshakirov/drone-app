@@ -3,6 +3,7 @@ import { View, Text } from "react-native";
 import { ConditionBox } from "./ConditionBox";
 import { SunshineCurveCard } from "./SunshineCurveCard";
 import { MapCard } from "./MapCard";
+import { WindDirectionCard } from "./WindDirectionCard";
 import type { GridItem } from "./types";
 import { CUBE_FLEX, WIDE_FLEX } from "./types";
 
@@ -95,6 +96,13 @@ export function ConditionsGrid({
                       onPress={() => onMetricPress("map")}
                       latitude={item.latitude}
                       longitude={item.longitude}
+                    />
+                  ) : item.metricKey === "windDirection" ? (
+                    <WindDirectionCard
+                      title={item.title}
+                      value={item.value}
+                      directionDegrees={item.directionDegrees ?? null}
+                      onPress={() => onMetricPress("windDirection")}
                     />
                   ) : isSunshineItem(item, formatSunTime) ? (
                     <SunshineCurveCard

@@ -6,10 +6,12 @@ export interface Settings {
   units: Units;
   windUnit: WindUnit;
   timeFormat: TimeFormat;
+  compassEnabled: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   units: "imperial",
   windUnit: "mph",
   timeFormat: "12h",
+  compassEnabled: true,
 };
