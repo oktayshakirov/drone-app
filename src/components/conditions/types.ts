@@ -13,6 +13,9 @@ export interface GridItem {
   /** For sunshine wide item only */
   sunrise?: string | null;
   sunset?: string | null;
+  /** For map wide item: show location preview */
+  latitude?: number;
+  longitude?: number;
 }
 
 /** Flex basis: wide = 2 units, cube = 1 unit. Row = 3 units (3 cubes or 1 wide + 1 cube). */

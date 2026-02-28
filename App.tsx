@@ -15,6 +15,7 @@ import { OverviewHero } from "./src/components/OverviewHero";
 import { ConditionsGrid, type GridItem } from "./src/components/conditions";
 import { InfoModal } from "./src/components/InfoModal";
 import { LocationPickerModal } from "./src/components/LocationPickerModal";
+import { MapModal } from "./src/components/MapModal";
 import { SettingsModal } from "./src/components/SettingsModal";
 import { SettingsProvider, useSettings } from "./src/contexts/SettingsContext";
 import { useLocation } from "./src/hooks/useLocation";
@@ -41,6 +42,7 @@ export default function App() {
 function AppContent() {
   const [infoMetric, setInfoMetric] = useState<string | null>(null);
   const [locationPickerVisible, setLocationPickerVisible] = useState(false);
+  const [mapModalVisible, setMapModalVisible] = useState(false);
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
 
   const { settings, setUnits, setWindUnit, setTimeFormat } = useSettings();
@@ -155,8 +157,16 @@ function AppContent() {
         metricKey: "visibility",
         shape: "cube",
       },
+      {
+        title: "Map",
+        value: "View map",
+        metricKey: "map",
+        shape: "wide",
+        latitude: coords?.latitude,
+        longitude: coords?.longitude,
+      },
     ];
-  }, [weather, settings.units, settings.windUnit, settings.timeFormat]);
+  }, [weather, settings.units, settings.windUnit, settings.timeFormat, coords?.latitude, coords?.longitude]);
 
   const loading = locationLoading || weatherLoading;
   const error = locationError ?? weatherError;
@@ -250,7 +260,10 @@ function AppContent() {
               <View className="mt-4">
                 <ConditionsGrid
                   items={conditionsGridItems}
-                  onMetricPress={setInfoMetric}
+                  onMetricPress={(key) => {
+                    if (key === "map") setMapModalVisible(true);
+                    else setInfoMetric(key);
+                  }}
                   formatSunTime={formatSunTime}
                   use24h={settings.timeFormat === "24h"}
                 />
@@ -273,6 +286,14 @@ function AppContent() {
             metricKey={infoMetric}
             onClose={() => setInfoMetric(null)}
           />
+          {coords && (
+            <MapModal
+              visible={mapModalVisible}
+              onClose={() => setMapModalVisible(false)}
+              latitude={coords.latitude}
+              longitude={coords.longitude}
+            />
+          )}
           <SettingsModal
             visible={settingsModalVisible}
             onClose={() => setSettingsModalVisible(false)}

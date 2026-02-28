@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text } from "react-native";
 import { ConditionBox } from "./ConditionBox";
 import { SunshineCurveCard } from "./SunshineCurveCard";
+import { MapCard } from "./MapCard";
 import type { GridItem } from "./types";
 import { CUBE_FLEX, WIDE_FLEX } from "./types";
 
@@ -89,7 +90,13 @@ export function ConditionsGrid({
 
               return (
                 <View key={item.metricKey} className="min-w-0" style={{ flex }}>
-                  {isSunshineItem(item, formatSunTime) ? (
+                  {item.metricKey === "map" ? (
+                    <MapCard
+                      onPress={() => onMetricPress("map")}
+                      latitude={item.latitude}
+                      longitude={item.longitude}
+                    />
+                  ) : isSunshineItem(item, formatSunTime) ? (
                     <SunshineCurveCard
                       sunrise={item.sunrise!}
                       sunset={item.sunset!}

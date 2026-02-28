@@ -4,5 +4,7 @@ export { ConditionsGrid } from "./ConditionsGrid";
 export type { ConditionsGridProps } from "./ConditionsGrid";
 export { SunshineCurveCard } from "./SunshineCurveCard";
 export type { SunshineCurveCardProps } from "./SunshineCurveCard";
+export { MapCard } from "./MapCard";
+export type { MapCardProps } from "./MapCard";
 export type { GridItem, ConditionBoxShape } from "./types";
 export { BOX_HEIGHT, CUBE_FLEX, WIDE_FLEX } from "./types";
