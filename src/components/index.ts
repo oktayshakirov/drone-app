@@ -2,12 +2,11 @@ export {
   ConditionsGrid,
   type GridItem,
   type ConditionsGridProps,
-  HeroDroneBox,
-  HeroWeatherBox,
+  ConditionBox,
   CUBE_FLEX,
   WIDE_FLEX,
 } from "./conditions";
-export type { HeroWeatherBoxProps } from "./conditions";
+export type { ConditionBoxProps } from "./conditions";
 export {
   InfoModal,
   LocationPickerModal,

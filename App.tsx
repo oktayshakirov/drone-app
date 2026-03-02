@@ -14,8 +14,7 @@ import { StatusBar } from "expo-status-bar";
 import {
   ConditionsGrid,
   type GridItem,
-  HeroDroneBox,
-  HeroWeatherBox,
+  ConditionBox,
   CUBE_FLEX,
   WIDE_FLEX,
   InfoModal,
@@ -23,6 +22,7 @@ import {
   MapModal,
   SettingsModal,
 } from "./src/components";
+import { conditionCodeToLabel, conditionCodeToIcon } from "./src/utils/weatherCondition";
 import { SettingsProvider, useSettings } from "./src/contexts/SettingsContext";
 import { useLocation } from "./src/hooks/useLocation";
 import { useWeather } from "./src/hooks/useWeather";
@@ -79,6 +79,16 @@ function AppContent() {
     isAvailable: revenueCatAvailable,
     restore,
   } = useRevenueCat();
+
+  const heroMinMax = useMemo(() => {
+    if (!weather?.hourly?.length) return { minCelsius: null as number | null, maxCelsius: null as number | null };
+    const temps = weather.hourly
+      .slice(0, 24)
+      .map((h) => h.temperatureCelsius)
+      .filter((t): t is number => t != null);
+    if (temps.length === 0) return { minCelsius: null, maxCelsius: null };
+    return { minCelsius: Math.min(...temps), maxCelsius: Math.max(...temps) };
+  }, [weather]);
 
   const conditionsGridItems = useMemo((): GridItem[] => {
     if (!weather) return [];
@@ -246,11 +256,28 @@ function AppContent() {
             {weather && (
               <View className="flex-row gap-2 mb-4">
                 <View className="min-w-0" style={{ flex: CUBE_FLEX }}>
-                  <HeroDroneBox />
+                  <ConditionBox
+                    title=""
+                    value=""
+                    metricKey="heroDrone"
+                    shape="cube"
+                    imageSource={require("./assets/drone.gif")}
+                  />
                 </View>
                 <View className="min-w-0" style={{ flex: WIDE_FLEX }}>
-                  <HeroWeatherBox
-                    conditionCode={weather.current.conditionCode}
+                  <ConditionBox
+                    title="Weather"
+                    value={conditionCodeToLabel(weather.current.conditionCode)}
+                    metricKey="weather"
+                    shape="wide"
+                    iconName={conditionCodeToIcon(weather.current.conditionCode) as React.ComponentProps<typeof Ionicons>["name"]}
+                    currentTemp={formatTemp(
+                      weather.current.temperatureCelsius,
+                      settings.units === "imperial",
+                    )}
+                    minTemp={formatTemp(heroMinMax.minCelsius, settings.units === "imperial")}
+                    maxTemp={formatTemp(heroMinMax.maxCelsius, settings.units === "imperial")}
+                    hideInfoIcon
                   />
                 </View>
               </View>

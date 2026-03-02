@@ -1,8 +1,6 @@
 export { ConditionBox } from "./ConditionBox";
 export type { ConditionBoxProps } from "./ConditionBox";
 export { ConditionsGrid } from "./ConditionsGrid";
-export { HeroDroneBox, HeroWeatherBox } from "./HeroBoxes";
-export type { HeroWeatherBoxProps } from "./HeroBoxes";
 export type { ConditionsGridProps } from "./ConditionsGrid";
 export { SunshineCurveCard } from "./SunshineCurveCard";
 export type { SunshineCurveCardProps } from "./SunshineCurveCard";
