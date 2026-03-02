@@ -1,11 +1,12 @@
 export { ConditionBox } from "./ConditionBox";
 export type { ConditionBoxProps } from "./ConditionBox";
 export { ConditionsGrid } from "./ConditionsGrid";
+export { HeroDroneBox, HeroWeatherBox } from "./HeroBoxes";
+export type { HeroWeatherBoxProps } from "./HeroBoxes";
 export type { ConditionsGridProps } from "./ConditionsGrid";
 export { SunshineCurveCard } from "./SunshineCurveCard";
 export type { SunshineCurveCardProps } from "./SunshineCurveCard";
-export { MapCard } from "./MapCard";
-export type { MapCardProps } from "./MapCard";
+export { MapCard, type MapCardProps } from "../map";
 export { WindDirectionCard } from "./WindDirectionCard";
 export type { WindDirectionCardProps } from "./WindDirectionCard";
 export type { GridItem, ConditionBoxShape } from "./types";

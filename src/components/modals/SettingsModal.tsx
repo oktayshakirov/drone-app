@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import type { Settings, Units, WindUnit, TimeFormat } from "../types/settings";
+import type { Settings, Units, WindUnit, TimeFormat } from "../../types/settings";
 
 const UNITS_OPTIONS: { id: Units; label: string }[] = [
   { id: "imperial", label: "Imperial (°F, mi)" },

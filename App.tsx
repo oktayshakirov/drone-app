@@ -11,12 +11,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
-import { OverviewHero } from "./src/components/OverviewHero";
-import { ConditionsGrid, type GridItem } from "./src/components/conditions";
-import { InfoModal } from "./src/components/InfoModal";
-import { LocationPickerModal } from "./src/components/LocationPickerModal";
-import { MapModal } from "./src/components/MapModal";
-import { SettingsModal } from "./src/components/SettingsModal";
+import {
+  ConditionsGrid,
+  type GridItem,
+  HeroDroneBox,
+  HeroWeatherBox,
+  CUBE_FLEX,
+  WIDE_FLEX,
+  InfoModal,
+  LocationPickerModal,
+  MapModal,
+  SettingsModal,
+} from "./src/components";
 import { SettingsProvider, useSettings } from "./src/contexts/SettingsContext";
 import { useLocation } from "./src/hooks/useLocation";
 import { useWeather } from "./src/hooks/useWeather";
@@ -238,8 +244,15 @@ function AppContent() {
               currentPlaceName={devicePlaceName}
             />
             {weather && (
-              <View className="mb-4">
-                <OverviewHero conditionCode={weather.current.conditionCode} />
+              <View className="flex-row gap-2 mb-4">
+                <View className="min-w-0" style={{ flex: CUBE_FLEX }}>
+                  <HeroDroneBox />
+                </View>
+                <View className="min-w-0" style={{ flex: WIDE_FLEX }}>
+                  <HeroWeatherBox
+                    conditionCode={weather.current.conditionCode}
+                  />
+                </View>
               </View>
             )}
 

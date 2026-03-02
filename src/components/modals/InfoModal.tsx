@@ -1,7 +1,7 @@
 import React from "react";
 import { Modal, View, Text, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { getInfo } from "../constants/metricCopy";
+import { getInfo } from "../../constants/metricCopy";
 
 interface InfoModalProps {
   visible: boolean;

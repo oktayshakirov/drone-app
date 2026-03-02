@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import MapView from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
-import { BOX_HEIGHT } from "./types";
+import { BOX_HEIGHT } from "../conditions/types";
 
 const ICON_COLOR = "#94a3b8";
 const ICON_SIZE = 20;
@@ -68,7 +68,7 @@ export function MapCard({ onPress, latitude, longitude }: MapCardProps) {
             )}
           </View>
           <View className="flex-1 min-w-0">
-            <Text className="section-label">Map</Text>
+            <Text className="section-label">No Fly Zone Map</Text>
             <Text className="text-white font-semibold mt-0.5 text-base">
               View map
             </Text>
