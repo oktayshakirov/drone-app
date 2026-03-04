@@ -3,7 +3,7 @@ import { View, Text } from "react-native";
 import { ConditionBox } from "./ConditionBox";
 import { SunshineCurveCard } from "./SunshineCurveCard";
 import { MapCard } from "../map";
-import { WindDirectionCard } from "./WindDirectionCard";
+import { WindCard } from "./WindCard";
 import type { GridItem } from "./types";
 import { CUBE_FLEX, WIDE_FLEX } from "./types";
 
@@ -47,6 +47,10 @@ function buildRows(items: GridItem[]): GridItem[][] {
         row.push(items[i]);
         i += 1;
       }
+      if (i < items.length && items[i].shape === "wide" && row.length > 0) {
+        row.push(items[i]);
+        i += 1;
+      }
       rows.push(row);
     }
   }
@@ -83,11 +87,17 @@ export function ConditionsGrid({
             {row.map((item, cellIndex) => {
               const isWidePlusCube =
                 row.length === 2 && row[0].shape === "wide";
+              const isCubePlusWide =
+                row.length === 2 && row[1].shape === "wide";
               const flex = isWidePlusCube
                 ? cellIndex === 0
                   ? WIDE_FLEX
                   : CUBE_FLEX
-                : CUBE_FLEX;
+                : isCubePlusWide
+                  ? cellIndex === 0
+                    ? CUBE_FLEX
+                    : WIDE_FLEX
+                  : CUBE_FLEX;
 
               return (
                 <View key={item.metricKey} className="min-w-0" style={{ flex }}>
@@ -97,12 +107,13 @@ export function ConditionsGrid({
                       latitude={item.latitude}
                       longitude={item.longitude}
                     />
-                  ) : item.metricKey === "windDirection" ? (
-                    <WindDirectionCard
-                      title={item.title}
-                      value={item.value}
+                  ) : item.metricKey === "wind" && item.windSpeedFormatted != null ? (
+                    <WindCard
+                      windSpeed={item.windSpeedFormatted}
+                      windGust={item.windGustFormatted ?? "—"}
+                      directionCardinal={item.windDirectionCardinal ?? "—"}
                       directionDegrees={item.directionDegrees ?? null}
-                      onPress={() => onMetricPress("windDirection")}
+                      onPress={() => onMetricPress("wind")}
                     />
                   ) : isSunshineItem(item, formatSunTime) ? (
                     <SunshineCurveCard

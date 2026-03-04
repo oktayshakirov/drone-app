@@ -54,7 +54,9 @@ export function ConditionBox({
 }: ConditionBoxProps) {
   const isCube = shape === "cube";
   const iconName = (iconNameProp ??
-    getConditionIcon(metricKey)) as React.ComponentProps<typeof Ionicons>["name"];
+    getConditionIcon(metricKey)) as React.ComponentProps<
+    typeof Ionicons
+  >["name"];
   const isPressable = typeof onPress === "function";
 
   const content = (

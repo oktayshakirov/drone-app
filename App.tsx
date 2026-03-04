@@ -22,7 +22,10 @@ import {
   MapModal,
   SettingsModal,
 } from "./src/components";
-import { conditionCodeToLabel, conditionCodeToIcon } from "./src/utils/weatherCondition";
+import {
+  conditionCodeToLabel,
+  conditionCodeToIcon,
+} from "./src/utils/weatherCondition";
 import { SettingsProvider, useSettings } from "./src/contexts/SettingsContext";
 import { useLocation } from "./src/hooks/useLocation";
 import { useWeather } from "./src/hooks/useWeather";
@@ -81,7 +84,11 @@ function AppContent() {
   } = useRevenueCat();
 
   const heroMinMax = useMemo(() => {
-    if (!weather?.hourly?.length) return { minCelsius: null as number | null, maxCelsius: null as number | null };
+    if (!weather?.hourly?.length)
+      return {
+        minCelsius: null as number | null,
+        maxCelsius: null as number | null,
+      };
     const temps = weather.hourly
       .slice(0, 24)
       .map((h) => h.temperatureCelsius)
@@ -96,28 +103,6 @@ function AppContent() {
     const useImperial = settings.units === "imperial";
     return [
       {
-        title: "Wind",
-        value: formatWind(c.wind.speedMps, settings.windUnit),
-        metricKey: "wind",
-        shape: "cube",
-      },
-      {
-        title: "Gust",
-        value:
-          c.wind.gustMps != null
-            ? formatWind(c.wind.gustMps, settings.windUnit)
-            : "—",
-        metricKey: "gust",
-        shape: "cube",
-      },
-      {
-        title: "Wind direction",
-        value: degreesToCardinal(c.wind.directionDegrees),
-        metricKey: "windDirection",
-        shape: "cube",
-        directionDegrees: c.wind.directionDegrees ?? undefined,
-      },
-      {
         title: "Visibility",
         value:
           c.visibilityMeters != null
@@ -127,6 +112,19 @@ function AppContent() {
             : "—",
         metricKey: "visibility",
         shape: "cube",
+      },
+      {
+        title: "Wind",
+        value: formatWind(c.wind.speedMps, settings.windUnit),
+        metricKey: "wind",
+        shape: "wide",
+        windSpeedFormatted: formatWind(c.wind.speedMps, settings.windUnit),
+        windGustFormatted:
+          c.wind.gustMps != null
+            ? formatWind(c.wind.gustMps, settings.windUnit)
+            : "—",
+        windDirectionCardinal: degreesToCardinal(c.wind.directionDegrees),
+        directionDegrees: c.wind.directionDegrees ?? undefined,
       },
       {
         title: "Sunshine time",
@@ -140,27 +138,21 @@ function AppContent() {
         sunset: c.sunset ?? undefined,
       },
       {
-        title: "Precipitation",
-        value: formatPercent(c.precipitationChancePercent),
-        metricKey: "precipitation",
-        shape: "cube",
-      },
-      {
         title: "Cloud cover",
         value: formatPercent(c.cloudCoverPercent),
         metricKey: "cloudCover",
         shape: "cube",
       },
       {
-        title: "Temperature",
-        value: formatTemp(c.temperatureCelsius, useImperial),
-        metricKey: "temperature",
+        title: "Precipitation",
+        value: formatPercent(c.precipitationChancePercent),
+        metricKey: "precipitation",
         shape: "cube",
       },
       {
-        title: "Humidity",
-        value: formatPercent(c.humidityPercent),
-        metricKey: "humidity",
+        title: "Kp index",
+        value: c.kpIndex != null ? String(c.kpIndex) : "—",
+        metricKey: "kpIndex",
         shape: "cube",
       },
       {
@@ -170,9 +162,9 @@ function AppContent() {
         shape: "cube",
       },
       {
-        title: "Kp index",
-        value: c.kpIndex != null ? String(c.kpIndex) : "—",
-        metricKey: "kpIndex",
+        title: "Humidity",
+        value: formatPercent(c.humidityPercent),
+        metricKey: "humidity",
         shape: "cube",
       },
       {
@@ -184,7 +176,14 @@ function AppContent() {
         longitude: coords?.longitude,
       },
     ];
-  }, [weather, settings.units, settings.windUnit, settings.timeFormat, coords?.latitude, coords?.longitude]);
+  }, [
+    weather,
+    settings.units,
+    settings.windUnit,
+    settings.timeFormat,
+    coords?.latitude,
+    coords?.longitude,
+  ]);
 
   const loading = locationLoading || weatherLoading;
   const error = locationError ?? weatherError;
@@ -270,13 +269,23 @@ function AppContent() {
                     value={conditionCodeToLabel(weather.current.conditionCode)}
                     metricKey="weather"
                     shape="wide"
-                    iconName={conditionCodeToIcon(weather.current.conditionCode) as React.ComponentProps<typeof Ionicons>["name"]}
+                    iconName={
+                      conditionCodeToIcon(
+                        weather.current.conditionCode,
+                      ) as React.ComponentProps<typeof Ionicons>["name"]
+                    }
                     currentTemp={formatTemp(
                       weather.current.temperatureCelsius,
                       settings.units === "imperial",
                     )}
-                    minTemp={formatTemp(heroMinMax.minCelsius, settings.units === "imperial")}
-                    maxTemp={formatTemp(heroMinMax.maxCelsius, settings.units === "imperial")}
+                    minTemp={formatTemp(
+                      heroMinMax.minCelsius,
+                      settings.units === "imperial",
+                    )}
+                    maxTemp={formatTemp(
+                      heroMinMax.maxCelsius,
+                      settings.units === "imperial",
+                    )}
                     hideInfoIcon
                   />
                 </View>
