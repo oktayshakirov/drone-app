@@ -15,9 +15,11 @@ import {
   ConditionsGrid,
   type GridItem,
   ConditionBox,
+  GoNoGoCard,
   CUBE_FLEX,
   WIDE_FLEX,
   InfoModal,
+  type WeatherPreviewData,
   LocationPickerModal,
   MapModal,
   SettingsModal,
@@ -27,6 +29,11 @@ import {
   conditionCodeToIcon,
 } from "./src/utils/weatherCondition";
 import { SettingsProvider, useSettings } from "./src/contexts/SettingsContext";
+import { evaluateSafety, getConditionBreakdown } from "./src/utils/goNoGo";
+import {
+  getThresholdsForWeightClass,
+  WEIGHT_CLASS_OPTIONS,
+} from "./src/constants/droneThresholds";
 import { useLocation } from "./src/hooks/useLocation";
 import { useWeather } from "./src/hooks/useWeather";
 import { useRevenueCat } from "./src/hooks/useRevenueCat";
@@ -54,8 +61,14 @@ function AppContent() {
   const [mapModalVisible, setMapModalVisible] = useState(false);
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
 
-  const { settings, setUnits, setWindUnit, setTimeFormat, setCompassEnabled } =
-    useSettings();
+  const {
+    settings,
+    setUnits,
+    setWindUnit,
+    setTimeFormat,
+    setCompassEnabled,
+    setDroneWeightClass,
+  } = useSettings();
   const {
     coords,
     placeName,
@@ -96,6 +109,56 @@ function AppContent() {
     if (temps.length === 0) return { minCelsius: null, maxCelsius: null };
     return { minCelsius: Math.min(...temps), maxCelsius: Math.max(...temps) };
   }, [weather]);
+
+  const safetyStatus = useMemo(() => {
+    if (!weather) return "green" as const;
+    const thresholds = getThresholdsForWeightClass(settings.droneWeightClass);
+    return evaluateSafety(weather.current, thresholds);
+  }, [weather, settings.droneWeightClass]);
+
+  const conditionBreakdown = useMemo(() => {
+    if (!weather) return null;
+    const thresholds = getThresholdsForWeightClass(settings.droneWeightClass);
+    return getConditionBreakdown(weather.current, thresholds);
+  }, [weather, settings.droneWeightClass]);
+
+  const conditionStatus = useMemo(() => {
+    if (!conditionBreakdown?.length) return null;
+    const byId = Object.fromEntries(
+      conditionBreakdown.map((item) => [item.id, item.status]),
+    ) as Record<string, "green" | "yellow" | "red">;
+    const worst = (
+      a: "green" | "yellow" | "red",
+      b: "green" | "yellow" | "red",
+    ) =>
+      a === "red" || b === "red"
+        ? "red"
+        : a === "yellow" || b === "yellow"
+          ? "yellow"
+          : "green";
+    return {
+      visibility: byId.visibility,
+      wind: worst(byId.windSpeed ?? "green", byId.windGust ?? "green"),
+      precipitation: byId.precipitation,
+      kpIndex: byId.kpIndex,
+      uvIndex: byId.uvIndex,
+    } as Record<string, "green" | "yellow" | "red">;
+  }, [conditionBreakdown]);
+
+  const weatherPreview = useMemo((): WeatherPreviewData | null => {
+    if (!weather) return null;
+    const useImperial = settings.units === "imperial";
+    return {
+      title: "Weather",
+      value: conditionCodeToLabel(weather.current.conditionCode),
+      iconName: conditionCodeToIcon(
+        weather.current.conditionCode,
+      ) as React.ComponentProps<typeof Ionicons>["name"],
+      currentTemp: formatTemp(weather.current.temperatureCelsius, useImperial),
+      minTemp: formatTemp(heroMinMax.minCelsius, useImperial),
+      maxTemp: formatTemp(heroMinMax.maxCelsius, useImperial),
+    };
+  }, [weather, settings.units, heroMinMax.minCelsius, heroMinMax.maxCelsius]);
 
   const conditionsGridItems = useMemo((): GridItem[] => {
     if (!weather) return [];
@@ -253,22 +316,29 @@ function AppContent() {
               currentPlaceName={devicePlaceName}
             />
             {weather && (
-              <View className="flex-row gap-2 mb-4">
-                <View className="min-w-0" style={{ flex: CUBE_FLEX }}>
-                  <ConditionBox
-                    title=""
-                    value=""
-                    metricKey="heroDrone"
-                    shape="cube"
-                    imageSource={require("./assets/drone.gif")}
+              <View
+                className="flex-row gap-2 mb-4"
+                style={{ width: "100%", flexWrap: "nowrap" }}
+              >
+                <View
+                  className="min-w-0"
+                  style={{ flexGrow: CUBE_FLEX, flexShrink: 1, flexBasis: 0 }}
+                >
+                  <GoNoGoCard
+                    status={safetyStatus}
+                    onPress={() => setInfoMetric("flightConditions")}
                   />
                 </View>
-                <View className="min-w-0" style={{ flex: WIDE_FLEX }}>
+                <View
+                  className="min-w-0"
+                  style={{ flexGrow: WIDE_FLEX, flexShrink: 1, flexBasis: 0 }}
+                >
                   <ConditionBox
                     title="Weather"
                     value={conditionCodeToLabel(weather.current.conditionCode)}
                     metricKey="weather"
                     shape="wide"
+                    onPress={(key) => setInfoMetric(key)}
                     iconName={
                       conditionCodeToIcon(
                         weather.current.conditionCode,
@@ -317,6 +387,12 @@ function AppContent() {
                   }}
                   formatSunTime={formatSunTime}
                   use24h={settings.timeFormat === "24h"}
+                  conditionStatus={conditionStatus}
+                  droneWeightClassLabel={
+                    WEIGHT_CLASS_OPTIONS.find(
+                      (o) => o.id === settings.droneWeightClass,
+                    )?.label ?? null
+                  }
                 />
               </View>
             )}
@@ -336,6 +412,20 @@ function AppContent() {
             visible={infoMetric != null}
             metricKey={infoMetric}
             onClose={() => setInfoMetric(null)}
+            conditionBreakdown={
+              infoMetric === "flightConditions" ? conditionBreakdown : null
+            }
+            conditionPreview={
+              infoMetric
+                ? (conditionsGridItems.find(
+                    (i) => i.metricKey === infoMetric,
+                  ) ?? null)
+                : null
+            }
+            weatherPreview={infoMetric === "weather" ? weatherPreview : null}
+            conditionStatus={conditionStatus}
+            formatSunTime={formatSunTime}
+            use24h={settings.timeFormat === "24h"}
           />
           {coords && (
             <MapModal
@@ -353,6 +443,7 @@ function AppContent() {
             setWindUnit={setWindUnit}
             setTimeFormat={setTimeFormat}
             setCompassEnabled={setCompassEnabled}
+            setDroneWeightClass={setDroneWeightClass}
           />
         </SafeAreaView>
       </LinearGradient>

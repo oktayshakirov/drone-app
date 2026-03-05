@@ -1,21 +1,31 @@
 import React from "react";
 import { View, Text } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { ConditionBox } from "./ConditionBox";
 import { SunshineCurveCard } from "./SunshineCurveCard";
 import { MapCard } from "../map";
 import { WindCard } from "./WindCard";
 import type { GridItem } from "./types";
 import { CUBE_FLEX, WIDE_FLEX } from "./types";
+import type { SafetyStatus } from "../../types/weather";
 
 export type { GridItem } from "./types";
 
 const CUBES_PER_ROW = 3;
+
+function toStatusIndicator(status: SafetyStatus | undefined): "yellow" | "red" | undefined {
+  return status === "yellow" ? "yellow" : status === "red" ? "red" : undefined;
+}
 
 export interface ConditionsGridProps {
   items: GridItem[];
   onMetricPress: (metricKey: string) => void;
   formatSunTime?: (iso: string, use24h: boolean) => string;
   use24h?: boolean;
+  /** Status per metricKey for Go/No-Go; show small dot on top-right when set. */
+  conditionStatus?: Record<string, SafetyStatus> | null;
+  /** Drone weight class label (e.g. "Sub-250 g"); shown on the right of the "Conditions" title. */
+  droneWeightClassLabel?: string | null;
 }
 
 /**
@@ -75,21 +85,82 @@ export function ConditionsGrid({
   onMetricPress,
   formatSunTime,
   use24h = false,
+  conditionStatus,
+  droneWeightClassLabel,
 }: ConditionsGridProps) {
   const rows = React.useMemo(() => buildRows(items), [items]);
 
+  const renderCell = (item: GridItem) => {
+    const statusIndicator = toStatusIndicator(conditionStatus?.[item.metricKey]);
+
+    if (item.metricKey === "map") {
+      return (
+        <MapCard
+          onPress={() => onMetricPress("map")}
+          latitude={item.latitude}
+          longitude={item.longitude}
+        />
+      );
+    }
+    if (item.metricKey === "wind" && item.windSpeedFormatted != null) {
+      return (
+        <WindCard
+          windSpeed={item.windSpeedFormatted}
+          windGust={item.windGustFormatted ?? "—"}
+          directionCardinal={item.windDirectionCardinal ?? "—"}
+          directionDegrees={item.directionDegrees ?? null}
+          onPress={() => onMetricPress("wind")}
+          statusIndicator={statusIndicator}
+        />
+      );
+    }
+    if (isSunshineItem(item, formatSunTime)) {
+      return (
+        <SunshineCurveCard
+          sunrise={item.sunrise!}
+          sunset={item.sunset!}
+          formatTime={formatSunTime!}
+          use24h={use24h}
+          onPress={() => onMetricPress("sunriseSunset")}
+        />
+      );
+    }
+    return (
+      <ConditionBox
+        title={item.title}
+        value={item.value}
+        metricKey={item.metricKey}
+        shape={item.shape}
+        onPress={onMetricPress}
+        statusIndicator={statusIndicator}
+      />
+    );
+  };
+
   return (
-    <View className="gap-2">
-      <Text className="section-label mb-0.5">Conditions</Text>
-      <View className="gap-2">
+    <View className="gap-2" style={{ width: "100%" }}>
+      <View className="flex-row items-center justify-between mb-0.5">
+        <Text className="section-label">Conditions</Text>
+        {droneWeightClassLabel ? (
+          <View className="flex-row items-center gap-1.5">
+            <Ionicons name="airplane-outline" size={12} color="#64748b" />
+            <Text className="text-slate-500 text-xs">{droneWeightClassLabel}</Text>
+          </View>
+        ) : null}
+      </View>
+      <View className="gap-2" style={{ width: "100%" }}>
         {rows.map((row, rowIndex) => (
-          <View key={rowIndex} className="flex-row gap-2">
+          <View
+            key={rowIndex}
+            className="flex-row gap-2"
+            style={{ width: "100%", flexWrap: "nowrap" }}
+          >
             {row.map((item, cellIndex) => {
               const isWidePlusCube =
                 row.length === 2 && row[0].shape === "wide";
               const isCubePlusWide =
                 row.length === 2 && row[1].shape === "wide";
-              const flex = isWidePlusCube
+              const flexGrow = isWidePlusCube
                 ? cellIndex === 0
                   ? WIDE_FLEX
                   : CUBE_FLEX
@@ -100,37 +171,16 @@ export function ConditionsGrid({
                   : CUBE_FLEX;
 
               return (
-                <View key={item.metricKey} className="min-w-0" style={{ flex }}>
-                  {item.metricKey === "map" ? (
-                    <MapCard
-                      onPress={() => onMetricPress("map")}
-                      latitude={item.latitude}
-                      longitude={item.longitude}
-                    />
-                  ) : item.metricKey === "wind" && item.windSpeedFormatted != null ? (
-                    <WindCard
-                      windSpeed={item.windSpeedFormatted}
-                      windGust={item.windGustFormatted ?? "—"}
-                      directionCardinal={item.windDirectionCardinal ?? "—"}
-                      directionDegrees={item.directionDegrees ?? null}
-                      onPress={() => onMetricPress("wind")}
-                    />
-                  ) : isSunshineItem(item, formatSunTime) ? (
-                    <SunshineCurveCard
-                      sunrise={item.sunrise!}
-                      sunset={item.sunset!}
-                      formatTime={formatSunTime!}
-                      use24h={use24h}
-                    />
-                  ) : (
-                    <ConditionBox
-                      title={item.title}
-                      value={item.value}
-                      metricKey={item.metricKey}
-                      shape={item.shape}
-                      onPress={onMetricPress}
-                    />
-                  )}
+                <View
+                  key={item.metricKey}
+                  className="min-w-0"
+                  style={{
+                    flexGrow,
+                    flexShrink: 1,
+                    flexBasis: 0,
+                  }}
+                >
+                  {renderCell(item)}
                 </View>
               );
             })}

@@ -57,6 +57,12 @@ export const METRIC_INFO: Record<string, Info> = {
       "Rain or snow can damage electronics and reduce visibility. " +
       "Our caution threshold uses precipitation chance; for your drone class, consider staying grounded when rain is likely.",
   },
+  weather: {
+    title: "Weather",
+    body:
+      "Current conditions (e.g. clear, cloudy, rain) affect visibility and flight safety. " +
+      "Temperature impacts battery performance. Use this with wind and precipitation to decide if it's safe to fly.",
+  },
   sunriseSunset: {
     title: "Sunrise & sunset",
     body:
@@ -74,6 +80,12 @@ export const METRIC_INFO: Record<string, Info> = {
     body:
       "Kp index measures geomagnetic activity (0–9). High Kp can cause GPS errors and affect compass reliability. " +
       "Consider postponing flight when Kp is elevated, especially for long-range or precision operations.",
+  },
+  flightConditions: {
+    title: "Go / No-Go",
+    body:
+      "This summary is based on wind, gusts, visibility, and precipitation chance for your selected drone weight class. " +
+      "Change your drone weight class in Settings to adjust the thresholds.",
   },
 };
 

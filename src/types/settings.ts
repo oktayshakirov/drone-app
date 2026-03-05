@@ -1,3 +1,5 @@
+import type { WeightClassId } from "../constants/droneThresholds";
+
 export type Units = "imperial" | "metric";
 export type WindUnit = "mph" | "kmh" | "ms" | "knots";
 export type TimeFormat = "12h" | "24h";
@@ -9,6 +11,8 @@ export interface Settings {
   timeFormat: TimeFormat;
   compassEnabled: boolean;
   mapType: MapType;
+  /** Drone weight class for Go/No-Go thresholds. */
+  droneWeightClass: WeightClassId;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -17,4 +21,5 @@ export const DEFAULT_SETTINGS: Settings = {
   timeFormat: "12h",
   compassEnabled: true,
   mapType: "standard",
+  droneWeightClass: "sub250",
 };

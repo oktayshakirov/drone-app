@@ -13,6 +13,7 @@ import type {
   TimeFormat,
   MapType,
 } from "../types/settings";
+import type { WeightClassId } from "../constants/droneThresholds";
 import { DEFAULT_SETTINGS } from "../types/settings";
 
 const SETTINGS_STORAGE_KEY = "@dronepal/settings";
@@ -24,6 +25,7 @@ interface SettingsContextValue {
   setTimeFormat: (t: TimeFormat) => void;
   setCompassEnabled: (enabled: boolean) => void;
   setMapType: (mapType: MapType) => void;
+  setDroneWeightClass: (id: WeightClassId) => void;
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -75,6 +77,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     setSettings((s) => ({ ...s, mapType }));
   }, []);
 
+  const setDroneWeightClass = useCallback((droneWeightClass: WeightClassId) => {
+    setSettings((s) => ({ ...s, droneWeightClass }));
+  }, []);
+
   return (
     <SettingsContext.Provider
       value={{
@@ -84,6 +90,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         setTimeFormat,
         setCompassEnabled,
         setMapType,
+        setDroneWeightClass,
       }}
     >
       {children}

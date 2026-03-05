@@ -8,13 +8,15 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { getConditionIcon } from "../../constants/conditionIcons";
+import { StatusIndicatorDot } from "./StatusIndicatorDot";
 import type { ConditionBoxShape } from "./types";
 import { BOX_HEIGHT } from "./types";
 
-const ICON_SIZE_CUBE = 22;
-const ICON_SIZE_WIDE = 20;
 const ICON_COLOR = "#94a3b8";
-const WEATHER_ICON_SIZE = 32;
+const SIZES = {
+  default: { iconCube: 22, iconWide: 20, weatherIcon: 32, minHeight: 72 },
+  large: { iconCube: 36, iconWide: 28, weatherIcon: 40, minHeight: 100 },
+} as const;
 
 export interface ConditionBoxProps {
   title: string;
@@ -32,6 +34,10 @@ export interface ConditionBoxProps {
   maxTemp?: string;
   /** Hide the info icon on wide layout. */
   hideInfoIcon?: boolean;
+  /** Go/No-Go status: show small yellow/red dot on top-right when caution or no-go. */
+  statusIndicator?: "yellow" | "red";
+  /** Larger layout for info modal preview. */
+  size?: "default" | "large";
 }
 
 /**
@@ -51,6 +57,8 @@ export function ConditionBox({
   minTemp,
   maxTemp,
   hideInfoIcon,
+  statusIndicator,
+  size = "default",
 }: ConditionBoxProps) {
   const isCube = shape === "cube";
   const iconName = (iconNameProp ??
@@ -58,12 +66,14 @@ export function ConditionBox({
     typeof Ionicons
   >["name"];
   const isPressable = typeof onPress === "function";
+  const s = SIZES[size];
+  const isLarge = size === "large";
 
   const content = (
     <>
       {isCube && imageSource ? (
         <View className="flex-1 items-center justify-center">
-          <View className="w-14 h-14 rounded-lg overflow-hidden">
+          <View className={isLarge ? "w-20 h-20 rounded-lg overflow-hidden" : "w-14 h-14 rounded-lg overflow-hidden"}>
             <Image
               source={imageSource}
               className="w-full h-full"
@@ -76,13 +86,13 @@ export function ConditionBox({
           <View className="mb-1">
             <Ionicons
               name={iconName}
-              size={ICON_SIZE_CUBE}
+              size={s.iconCube}
               color={ICON_COLOR}
             />
           </View>
-          <Text className="section-label text-[10px]">{title}</Text>
+          <Text className={isLarge ? "section-label text-sm" : "section-label text-[10px]"}>{title}</Text>
           <Text
-            className="text-white font-semibold mt-0.5 text-sm text-center"
+            className={isLarge ? "text-white font-semibold mt-0.5 text-lg text-center" : "text-white font-semibold mt-0.5 text-sm text-center"}
             numberOfLines={2}
           >
             {value}
@@ -91,10 +101,10 @@ export function ConditionBox({
       ) : currentTemp != null && minTemp != null && maxTemp != null ? (
         <View className="flex-1 flex-row items-center justify-between gap-4">
           <View className="flex-row items-center gap-3 flex-1 min-w-0">
-            <View className="w-12 h-12 rounded-xl bg-white/5 items-center justify-center flex-shrink-0">
+            <View className={isLarge ? "w-14 h-14 rounded-xl bg-white/5 items-center justify-center flex-shrink-0" : "w-12 h-12 rounded-xl bg-white/5 items-center justify-center flex-shrink-0"}>
               <Ionicons
                 name={iconName}
-                size={WEATHER_ICON_SIZE}
+                size={s.weatherIcon}
                 color={ICON_COLOR}
               />
             </View>
@@ -123,17 +133,17 @@ export function ConditionBox({
       ) : (
         <View className="flex-1 flex-row items-center justify-between gap-3">
           <View className="flex-row items-center gap-3 flex-1 min-w-0">
-            <View className="w-9 h-9 rounded-lg bg-surface/80 items-center justify-center flex-shrink-0">
+            <View className={isLarge ? "w-14 h-14 rounded-xl bg-surface/80 items-center justify-center flex-shrink-0" : "w-9 h-9 rounded-lg bg-surface/80 items-center justify-center flex-shrink-0"}>
               <Ionicons
                 name={iconName}
-                size={ICON_SIZE_WIDE}
+                size={s.iconWide}
                 color={ICON_COLOR}
               />
             </View>
             <View className="flex-1 min-w-0">
-              <Text className="section-label">{title}</Text>
+              <Text className={isLarge ? "section-label text-base" : "section-label"}>{title}</Text>
               <Text
-                className="text-white font-semibold mt-0.5 text-base"
+                className={isLarge ? "text-white font-semibold mt-0.5 text-xl" : "text-white font-semibold mt-0.5 text-base"}
                 numberOfLines={1}
               >
                 {value}
@@ -141,7 +151,7 @@ export function ConditionBox({
             </View>
           </View>
 
-          {!hideInfoIcon && metricKey !== "wind" && (
+          {!hideInfoIcon && metricKey !== "wind" && !isLarge && (
             <Ionicons
               name="information-circle-outline"
               size={22}
@@ -156,7 +166,10 @@ export function ConditionBox({
 
   const boxClass =
     "condition-box flex-1 min-h-0 min-w-0 rounded-xl border border-border bg-card p-3";
-  const boxStyle = { minHeight: BOX_HEIGHT };
+  const boxStyle = {
+    minHeight: size === "default" ? BOX_HEIGHT : s.minHeight,
+    ...(statusIndicator ? { position: "relative" as const } : {}),
+  };
 
   if (isPressable) {
     return (
@@ -167,12 +180,14 @@ export function ConditionBox({
         style={boxStyle}
       >
         {content}
+        {statusIndicator && <StatusIndicatorDot status={statusIndicator} />}
       </TouchableOpacity>
     );
   }
   return (
     <View className={boxClass} style={boxStyle}>
       {content}
+      {statusIndicator && <StatusIndicatorDot status={statusIndicator} />}
     </View>
   );
 }

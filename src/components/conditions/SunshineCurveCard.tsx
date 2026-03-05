@@ -1,30 +1,51 @@
 import React, { useMemo } from "react";
-import { View, Text } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Path, Circle } from "react-native-svg";
 import { BOX_HEIGHT } from "./types";
 
 const ICON_COLOR = "#94a3b8";
-const ICON_SIZE = 18;
-const ARC_WIDTH = 88;
-const ARC_HEIGHT = 24;
-const PADDING_X = 8;
 const SUN_COLOR = "#e8a030";
 const STROKE_COLOR = "#4a7c4a";
 const CURVE_GREY = "#6b7280";
-const END_DOT_R = 4;
-const SVG_VIEW_WIDTH = ARC_WIDTH + 2 * PADDING_X;
+
+const SIZES = {
+  default: {
+    iconSize: 18,
+    arcWidth: 88,
+    arcHeight: 24,
+    paddingX: 8,
+    endDotR: 4,
+    sunDotR: 6,
+    strokeWidth: 2.5,
+    minHeight: 72,
+  },
+  large: {
+    iconSize: 24,
+    arcWidth: 140,
+    arcHeight: 38,
+    paddingX: 12,
+    endDotR: 6,
+    sunDotR: 8,
+    strokeWidth: 3,
+    minHeight: 100,
+  },
+} as const;
 
 export interface SunshineCurveCardProps {
   sunrise: string | null;
   sunset: string | null;
   formatTime: (iso: string, use24h: boolean) => string;
   use24h: boolean;
+  /** Larger layout for info modal preview. */
+  size?: "default" | "large";
+  /** When set, card is pressable and opens info modal. */
+  onPress?: () => void;
 }
 
-function sunPosition(t: number): { x: number; y: number } {
-  const x = t * ARC_WIDTH;
-  const y = ARC_HEIGHT * ((1 - t) * (1 - t) + t * t);
+function sunPosition(t: number, arcWidth: number, arcHeight: number): { x: number; y: number } {
+  const x = t * arcWidth;
+  const y = arcHeight * ((1 - t) * (1 - t) + t * t);
   return { x, y };
 }
 
@@ -33,10 +54,16 @@ export function SunshineCurveCard({
   sunset,
   formatTime,
   use24h,
+  size = "default",
+  onPress,
 }: SunshineCurveCardProps) {
+  const s = SIZES[size];
+  const svgViewWidth = s.arcWidth + 2 * s.paddingX;
+  const viewHeight = s.arcHeight + 16;
+
   const { inSunTimeframe, sunX, sunY } = useMemo(() => {
     if (!sunrise || !sunset) {
-      return { inSunTimeframe: false, sunX: ARC_WIDTH / 2, sunY: ARC_HEIGHT };
+      return { inSunTimeframe: false, sunX: s.arcWidth / 2, sunY: s.arcHeight };
     }
     const now = Date.now();
     const rise = new Date(sunrise).getTime();
@@ -44,54 +71,92 @@ export function SunshineCurveCard({
     const t = (now - rise) / (set - rise);
     const inSunTimeframe = t >= 0 && t <= 1;
     const tClamped = Math.max(0, Math.min(1, t));
-    const { x: sunX, y: sunY } = sunPosition(tClamped);
+    const { x: sunX, y: sunY } = sunPosition(tClamped, s.arcWidth, s.arcHeight);
     return { inSunTimeframe, sunX, sunY };
-  }, [sunrise, sunset]);
+  }, [sunrise, sunset, size]);
 
   const pathD = useMemo(
-    () => `M ${PADDING_X} ${ARC_HEIGHT} Q ${PADDING_X + ARC_WIDTH / 2} 0 ${PADDING_X + ARC_WIDTH} ${ARC_HEIGHT}`,
-    [],
+    () =>
+      `M ${s.paddingX} ${s.arcHeight} Q ${s.paddingX + s.arcWidth / 2} 0 ${s.paddingX + s.arcWidth} ${s.arcHeight}`,
+    [s.paddingX, s.arcWidth, s.arcHeight],
   );
 
-  const viewHeight = ARC_HEIGHT + 16;
-  const sunXOffset = sunX + PADDING_X;
+  const sunXOffset = sunX + s.paddingX;
   const sunriseStr = sunrise ? formatTime(sunrise, use24h) : "—";
   const sunsetStr = sunset ? formatTime(sunset, use24h) : "—";
 
-  return (
-    <View
-      className="condition-box flex-row items-center gap-2 py-2 px-2.5 rounded-xl border border-border bg-card"
-      style={{ minHeight: BOX_HEIGHT }}
-    >
+  const content = (
+    <>
       <View className="flex-1 min-w-0">
         <View className="flex-row items-center gap-1.5">
-          <Ionicons name="sunny-outline" size={ICON_SIZE} color={ICON_COLOR} />
-          <Text className="section-label">Sunrise</Text>
+          <Ionicons name="sunny-outline" size={s.iconSize} color={ICON_COLOR} />
+          <Text className={size === "large" ? "section-label text-base" : "section-label"}>Sunrise</Text>
         </View>
-        <Text className="text-white font-semibold text-sm mt-0.5">{sunriseStr}</Text>
+        <Text className={size === "large" ? "text-white font-semibold text-lg mt-0.5" : "text-white font-semibold text-sm mt-0.5"}>
+          {sunriseStr}
+        </Text>
         <View className="flex-row items-center gap-1.5 mt-1">
-          <Ionicons name="sunny-outline" size={ICON_SIZE} color={ICON_COLOR} />
-          <Text className="section-label">Sunset</Text>
+          <Ionicons name="sunny-outline" size={s.iconSize} color={ICON_COLOR} />
+          <Text className={size === "large" ? "section-label text-base" : "section-label"}>Sunset</Text>
         </View>
-        <Text className="text-white font-semibold text-sm mt-0.5">{sunsetStr}</Text>
+        <Text className={size === "large" ? "text-white font-semibold text-lg mt-0.5" : "text-white font-semibold text-sm mt-0.5"}>
+          {sunsetStr}
+        </Text>
       </View>
       <View
         className="items-center justify-center"
-        style={{ width: SVG_VIEW_WIDTH, height: viewHeight }}
+        style={{ width: svgViewWidth, height: viewHeight }}
       >
-        <Svg width={SVG_VIEW_WIDTH} height={viewHeight} viewBox={`0 0 ${SVG_VIEW_WIDTH} ${viewHeight}`}>
+        <Svg
+          width={svgViewWidth}
+          height={viewHeight}
+          viewBox={`0 0 ${svgViewWidth} ${viewHeight}`}
+        >
           <Path
             d={pathD}
             fill="none"
             stroke={inSunTimeframe ? STROKE_COLOR : CURVE_GREY}
-            strokeWidth={2.5}
+            strokeWidth={s.strokeWidth}
             strokeLinecap="round"
           />
-          <Circle cx={PADDING_X} cy={ARC_HEIGHT} r={END_DOT_R} fill={inSunTimeframe ? STROKE_COLOR : CURVE_GREY} />
-          <Circle cx={PADDING_X + ARC_WIDTH} cy={ARC_HEIGHT} r={END_DOT_R} fill={inSunTimeframe ? STROKE_COLOR : CURVE_GREY} />
-          {inSunTimeframe && <Circle cx={sunXOffset} cy={sunY} r={6} fill={SUN_COLOR} />}
+          <Circle
+            cx={s.paddingX}
+            cy={s.arcHeight}
+            r={s.endDotR}
+            fill={inSunTimeframe ? STROKE_COLOR : CURVE_GREY}
+          />
+          <Circle
+            cx={s.paddingX + s.arcWidth}
+            cy={s.arcHeight}
+            r={s.endDotR}
+            fill={inSunTimeframe ? STROKE_COLOR : CURVE_GREY}
+          />
+          {inSunTimeframe && (
+            <Circle cx={sunXOffset} cy={sunY} r={s.sunDotR} fill={SUN_COLOR} />
+          )}
         </Svg>
       </View>
+    </>
+  );
+
+  const style = { minHeight: size === "default" ? BOX_HEIGHT : s.minHeight };
+  const className = "condition-box flex-row items-center gap-2 py-2 px-2.5 rounded-xl border border-border bg-card";
+
+  if (onPress) {
+    return (
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={onPress}
+        className={className}
+        style={style}
+      >
+        {content}
+      </TouchableOpacity>
+    );
+  }
+  return (
+    <View className={className} style={style}>
+      {content}
     </View>
   );
 }

@@ -1,16 +1,173 @@
 import React from "react";
-import { Modal, View, Text, Pressable } from "react-native";
+import { Modal, View, Text, Pressable, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { getInfo } from "../../constants/metricCopy";
+import type { ConditionBreakdownItem } from "../../utils/goNoGo";
+import type { SafetyStatus } from "../../types/weather";
+import type { GridItem } from "../conditions/types";
+import { ConditionBox } from "../conditions/ConditionBox";
+import { WindCard } from "../conditions/WindCard";
+import { SunshineCurveCard } from "../conditions/SunshineCurveCard";
+
+/** Data to show the weather condition (hero-style) in the info modal when metricKey is "weather". */
+export interface WeatherPreviewData {
+  title: string;
+  value: string;
+  iconName: React.ComponentProps<typeof Ionicons>["name"];
+  currentTemp: string;
+  minTemp: string;
+  maxTemp: string;
+}
 
 interface InfoModalProps {
   visible: boolean;
   metricKey: string | null;
   onClose: () => void;
+  /** When metricKey is "flightConditions", show this breakdown of green/yellow/red per condition. */
+  conditionBreakdown?: ConditionBreakdownItem[] | null;
+  /** Current condition data for the opened metric; used to show a larger preview at the top. */
+  conditionPreview?: GridItem | null;
+  /** When metricKey is "weather", show this condition + temps as the preview. */
+  weatherPreview?: WeatherPreviewData | null;
+  /** Per-metric Go/No-Go status; show "Current status" row in modal when this metric has one. */
+  conditionStatus?: Record<string, SafetyStatus> | null;
+  formatSunTime?: (iso: string, use24h: boolean) => string;
+  use24h?: boolean;
 }
 
-export function InfoModal({ visible, metricKey, onClose }: InfoModalProps) {
+const STATUS_LABELS: Record<SafetyStatus, string> = {
+  green: "Go",
+  yellow: "Caution",
+  red: "No-Go",
+};
+
+const STATUS_COLORS = {
+  green: { bg: "bg-safe-green/20", text: "text-safe-green", icon: "checkmark-circle" as const },
+  yellow: { bg: "bg-caution-yellow/20", text: "text-caution-yellow", icon: "warning" as const },
+  red: { bg: "bg-danger-red/20", text: "text-danger-red", icon: "close-circle" as const },
+};
+
+function ConditionRow({ item }: { item: ConditionBreakdownItem }) {
+  const style = STATUS_COLORS[item.status];
+  return (
+    <View className={`flex-row items-center justify-between py-2.5 px-3 rounded-lg ${style.bg} mb-2`}>
+      <View className="flex-row items-center gap-2 flex-1 min-w-0">
+        <Ionicons
+          name={style.icon}
+          size={20}
+          color={item.status === "green" ? "#22c55e" : item.status === "yellow" ? "#eab308" : "#ef4444"}
+        />
+        <View className="flex-1 min-w-0">
+          <Text className="text-white font-medium">{item.label}</Text>
+          <Text className="text-slate-400 text-xs mt-0.5">{item.detail}</Text>
+        </View>
+      </View>
+      <Text className={`font-semibold text-sm ${style.text}`}>{item.value}</Text>
+    </View>
+  );
+}
+
+/** Renders a larger version of the condition for the info modal (no onPress). */
+function ConditionPreviewBlock({
+  item,
+  formatSunTime,
+  use24h = false,
+}: {
+  item: GridItem;
+  formatSunTime?: (iso: string, use24h: boolean) => string;
+  use24h?: boolean;
+}) {
+  if (item.metricKey === "wind" && item.windSpeedFormatted != null) {
+    return (
+      <WindCard
+        windSpeed={item.windSpeedFormatted}
+        windGust={item.windGustFormatted ?? "—"}
+        directionCardinal={item.windDirectionCardinal ?? "—"}
+        directionDegrees={item.directionDegrees ?? null}
+        size="large"
+      />
+    );
+  }
+  if (
+    item.metricKey === "sunriseSunset" &&
+    item.sunrise != null &&
+    item.sunset != null &&
+    formatSunTime
+  ) {
+    return (
+      <SunshineCurveCard
+        sunrise={item.sunrise}
+        sunset={item.sunset}
+        formatTime={formatSunTime}
+        use24h={use24h}
+        size="large"
+      />
+    );
+  }
+  return (
+    <ConditionBox
+      title={item.title}
+      value={item.value}
+      metricKey={item.metricKey}
+      shape={item.shape}
+      size="large"
+    />
+  );
+}
+
+/** Single condition status row (Go / Caution / No-Go) for info modals. */
+function ConditionStatusRow({ status }: { status: SafetyStatus }) {
+  const style = STATUS_COLORS[status];
+  const label = STATUS_LABELS[status];
+  const color = status === "green" ? "#22c55e" : status === "yellow" ? "#eab308" : "#ef4444";
+  return (
+    <View className={`flex-row items-center justify-between gap-2 py-2.5 px-3 rounded-lg ${style.bg} mb-4`}>
+      <View className="flex-row items-center gap-2 flex-1 min-w-0">
+        <Ionicons name={style.icon} size={20} color={color} />
+        <Text className="text-white font-medium">Current status</Text>
+      </View>
+      <Text className={`font-semibold text-sm ${style.text}`}>{label}</Text>
+    </View>
+  );
+}
+
+/** Large weather condition box for the weather info modal (condition label + temps). */
+function WeatherPreviewBlock({ data }: { data: WeatherPreviewData }) {
+  return (
+    <ConditionBox
+      title={data.title}
+      value={data.value}
+      metricKey="weather"
+      shape="wide"
+      size="large"
+      iconName={data.iconName}
+      currentTemp={data.currentTemp}
+      minTemp={data.minTemp}
+      maxTemp={data.maxTemp}
+      hideInfoIcon
+    />
+  );
+}
+
+export function InfoModal({
+  visible,
+  metricKey,
+  onClose,
+  conditionBreakdown,
+  conditionPreview,
+  weatherPreview,
+  conditionStatus,
+  formatSunTime,
+  use24h = false,
+}: InfoModalProps) {
   const info = metricKey ? getInfo(metricKey) : null;
+  const showBreakdown = metricKey === "flightConditions" && conditionBreakdown && conditionBreakdown.length > 0;
+  const showConditionPreview =
+    conditionPreview &&
+    metricKey !== "map" &&
+    metricKey !== "flightConditions";
+  const showWeatherPreview = metricKey === "weather" && weatherPreview;
+  const statusForMetric = metricKey && conditionStatus?.[metricKey];
 
   return (
     <Modal
@@ -21,7 +178,7 @@ export function InfoModal({ visible, metricKey, onClose }: InfoModalProps) {
     >
       <Pressable className="flex-1 bg-black/60 justify-end" onPress={onClose}>
         <Pressable
-          className="bg-card border-t border-border rounded-t-3xl p-6"
+          className="bg-card border-t border-border rounded-t-3xl p-6 max-h-[85%]"
           onPress={(e) => e.stopPropagation()}
         >
           <View className="w-12 h-1 bg-slate-600 rounded-full self-center mt-1 mb-2" />
@@ -35,14 +192,39 @@ export function InfoModal({ visible, metricKey, onClose }: InfoModalProps) {
             </Pressable>
           </View>
           {info ? (
-            <View className="pb-6">
+            <ScrollView className="pb-6" showsVerticalScrollIndicator={false}>
+              {showWeatherPreview && weatherPreview && (
+                <View className="mb-4">
+                  <WeatherPreviewBlock data={weatherPreview} />
+                </View>
+              )}
+              {showConditionPreview && conditionPreview && (
+                <View className="mb-4">
+                  <ConditionPreviewBlock
+                    item={conditionPreview}
+                    formatSunTime={formatSunTime}
+                    use24h={use24h}
+                  />
+                </View>
+              )}
+              {statusForMetric && (
+                <ConditionStatusRow status={statusForMetric} />
+              )}
               <Text className="text-white text-xl font-semibold">
                 {info.title}
               </Text>
               <Text className="text-slate-300 mt-3 mb-4 leading-6">
                 {info.body}
               </Text>
-            </View>
+              {showBreakdown && (
+                <View className="mt-2">
+                  <Text className="section-label mb-2">Current conditions</Text>
+                  {conditionBreakdown!.map((item) => (
+                    <ConditionRow key={item.id} item={item} />
+                  ))}
+                </View>
+              )}
+            </ScrollView>
           ) : (
             <Text className="text-slate-400 pb-6">
               No details for this metric.
