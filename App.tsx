@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
+import Constants from "expo-constants";
 import {
   ConditionsGrid,
   type GridItem,
@@ -24,6 +25,7 @@ import {
   MapModal,
   SettingsModal,
 } from "./src/components";
+import { ConsentDialog } from "./src/components/ads";
 import {
   conditionCodeToLabel,
   conditionCodeToIcon,
@@ -60,6 +62,9 @@ function AppContent() {
   const [locationPickerVisible, setLocationPickerVisible] = useState(false);
   const [mapModalVisible, setMapModalVisible] = useState(false);
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
+  const [AdBannerComponent, setAdBannerComponent] =
+    useState<React.ComponentType<{ isPro: boolean }> | null>(null);
+  const [consentCompleted, setConsentCompleted] = useState(false);
 
   const {
     settings,
@@ -95,6 +100,21 @@ function AppContent() {
     isAvailable: revenueCatAvailable,
     restore,
   } = useRevenueCat();
+
+  useEffect(() => {
+    if (Constants.appOwnership === "expo") return;
+    (async () => {
+      try {
+        const { default: mobileAds } =
+          await import("react-native-google-mobile-ads");
+        await mobileAds().initialize();
+        const { AdBanner } = await import("./src/components/ads/BannerAd");
+        setAdBannerComponent(() => AdBanner);
+      } catch {
+        // Native module not available or init failed (e.g. dev build not used).
+      }
+    })();
+  }, []);
 
   const heroMinMax = useMemo(() => {
     if (!weather?.hourly?.length)
@@ -274,139 +294,157 @@ function AppContent() {
           edges={["top"]}
         >
           <StatusBar style="light" />
-          <ScrollView
-            className="flex-1"
-            contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
-          >
-            {coords && (
-              <View className="flex-row items-center justify-between mb-3 py-1.5">
-                <Pressable
-                  onPress={() => setLocationPickerVisible(true)}
-                  className="flex-row items-center gap-2 flex-1 min-w-0 rounded-lg active:opacity-80"
-                >
-                  <Ionicons name="location" size={16} color="#94a3b8" />
-                  <Text
-                    className="text-slate-400 text-sm flex-1"
-                    numberOfLines={1}
+          <View style={styles.mainContent}>
+            <ScrollView
+              className="flex-1"
+              contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+              showsVerticalScrollIndicator={false}
+            >
+              {coords && (
+                <View className="flex-row items-center justify-between mb-3 py-1.5">
+                  <Pressable
+                    onPress={() => setLocationPickerVisible(true)}
+                    className="flex-row items-center gap-2 flex-1 min-w-0 rounded-lg active:opacity-80"
                   >
-                    {placeName ??
-                      `${coords.latitude.toFixed(2)}°, ${coords.longitude.toFixed(2)}°`}
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => setSettingsModalVisible(true)}
-                  className="p-2 -m-2 rounded-lg active:opacity-70"
-                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                >
-                  <Ionicons name="settings-outline" size={22} color="#94a3b8" />
-                </Pressable>
-              </View>
-            )}
-            <LocationPickerModal
-              visible={locationPickerVisible}
-              onClose={() => setLocationPickerVisible(false)}
-              onSelect={(loc) => {
-                setPickedLocation(loc);
-                setLocationPickerVisible(false);
-              }}
-              onUseCurrent={() => {
-                clearPickedLocation();
-                setLocationPickerVisible(false);
-              }}
-              currentPlaceName={devicePlaceName}
-            />
-            {weather && (
-              <View
-                className="flex-row gap-2 mb-4"
-                style={{ width: "100%", flexWrap: "nowrap" }}
-              >
-                <View
-                  className="min-w-0"
-                  style={{ flexGrow: CUBE_FLEX, flexShrink: 1, flexBasis: 0 }}
-                >
-                  <GoNoGoCard
-                    status={safetyStatus}
-                    onPress={() => setInfoMetric("flightConditions")}
-                  />
+                    <Ionicons name="location" size={16} color="#94a3b8" />
+                    <Text
+                      className="text-slate-400 text-sm flex-1"
+                      numberOfLines={1}
+                    >
+                      {placeName ??
+                        `${coords.latitude.toFixed(2)}°, ${coords.longitude.toFixed(2)}°`}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setSettingsModalVisible(true)}
+                    className="p-2 -m-2 rounded-lg active:opacity-70"
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  >
+                    <Ionicons
+                      name="settings-outline"
+                      size={22}
+                      color="#94a3b8"
+                    />
+                  </Pressable>
                 </View>
+              )}
+              <LocationPickerModal
+                visible={locationPickerVisible}
+                onClose={() => setLocationPickerVisible(false)}
+                onSelect={(loc) => {
+                  setPickedLocation(loc);
+                  setLocationPickerVisible(false);
+                }}
+                onUseCurrent={() => {
+                  clearPickedLocation();
+                  setLocationPickerVisible(false);
+                }}
+                currentPlaceName={devicePlaceName}
+              />
+              {weather && (
                 <View
-                  className="min-w-0"
-                  style={{ flexGrow: WIDE_FLEX, flexShrink: 1, flexBasis: 0 }}
+                  className="flex-row gap-2 mb-4"
+                  style={{ width: "100%", flexWrap: "nowrap" }}
                 >
-                  <ConditionBox
-                    title="Weather"
-                    value={conditionCodeToLabel(weather.current.conditionCode)}
-                    metricKey="weather"
-                    shape="wide"
-                    onPress={(key) => setInfoMetric(key)}
-                    iconName={
-                      conditionCodeToIcon(
+                  <View
+                    className="min-w-0"
+                    style={{ flexGrow: CUBE_FLEX, flexShrink: 1, flexBasis: 0 }}
+                  >
+                    <GoNoGoCard
+                      status={safetyStatus}
+                      onPress={() => setInfoMetric("flightConditions")}
+                    />
+                  </View>
+                  <View
+                    className="min-w-0"
+                    style={{ flexGrow: WIDE_FLEX, flexShrink: 1, flexBasis: 0 }}
+                  >
+                    <ConditionBox
+                      title="Weather"
+                      value={conditionCodeToLabel(
                         weather.current.conditionCode,
-                      ) as React.ComponentProps<typeof Ionicons>["name"]
+                      )}
+                      metricKey="weather"
+                      shape="wide"
+                      onPress={(key) => setInfoMetric(key)}
+                      iconName={
+                        conditionCodeToIcon(
+                          weather.current.conditionCode,
+                        ) as React.ComponentProps<typeof Ionicons>["name"]
+                      }
+                      currentTemp={formatTemp(
+                        weather.current.temperatureCelsius,
+                        settings.units === "imperial",
+                      )}
+                      minTemp={formatTemp(
+                        heroMinMax.minCelsius,
+                        settings.units === "imperial",
+                      )}
+                      maxTemp={formatTemp(
+                        heroMinMax.maxCelsius,
+                        settings.units === "imperial",
+                      )}
+                      hideInfoIcon
+                    />
+                  </View>
+                </View>
+              )}
+
+              {error && (
+                <View className="mt-4 p-3 rounded-lg bg-danger-red/20">
+                  <Text className="text-danger-red text-sm">{error}</Text>
+                </View>
+              )}
+
+              {isMock && (
+                <View className="mt-2 p-2 rounded-lg bg-caution-yellow/20">
+                  <Text className="text-caution-yellow text-xs">
+                    Using sample weather. Add WeatherKit credentials for live
+                    data.
+                  </Text>
+                </View>
+              )}
+
+              {weather && (
+                <View className="mt-4">
+                  <ConditionsGrid
+                    items={conditionsGridItems}
+                    onMetricPress={(key) => {
+                      if (key === "map") setMapModalVisible(true);
+                      else setInfoMetric(key);
+                    }}
+                    formatSunTime={formatSunTime}
+                    use24h={settings.timeFormat === "24h"}
+                    conditionStatus={conditionStatus}
+                    droneWeightClassLabel={
+                      WEIGHT_CLASS_OPTIONS.find(
+                        (o) => o.id === settings.droneWeightClass,
+                      )?.label ?? null
                     }
-                    currentTemp={formatTemp(
-                      weather.current.temperatureCelsius,
-                      settings.units === "imperial",
-                    )}
-                    minTemp={formatTemp(
-                      heroMinMax.minCelsius,
-                      settings.units === "imperial",
-                    )}
-                    maxTemp={formatTemp(
-                      heroMinMax.maxCelsius,
-                      settings.units === "imperial",
-                    )}
-                    hideInfoIcon
                   />
                 </View>
-              </View>
-            )}
+              )}
 
-            {error && (
-              <View className="mt-4 p-3 rounded-lg bg-danger-red/20">
-                <Text className="text-danger-red text-sm">{error}</Text>
-              </View>
-            )}
-
-            {isMock && (
-              <View className="mt-2 p-2 rounded-lg bg-caution-yellow/20">
-                <Text className="text-caution-yellow text-xs">
-                  Using sample weather. Add WeatherKit credentials for live
-                  data.
+              <View className="mt-8 pt-4 border-t border-border flex-row items-center justify-center gap-1.5">
+                <Text className="text-slate-500 text-xs font-bold">
+                  Powered by
+                </Text>
+                <View className="px-2">
+                  <Ionicons name="logo-apple" size={14} color="#94a3b8" />
+                </View>
+                <Text className="text-slate-500 text-xs font-bold">
+                  Weather
                 </Text>
               </View>
-            )}
+            </ScrollView>
 
-            {weather && (
-              <View className="mt-4">
-                <ConditionsGrid
-                  items={conditionsGridItems}
-                  onMetricPress={(key) => {
-                    if (key === "map") setMapModalVisible(true);
-                    else setInfoMetric(key);
-                  }}
-                  formatSunTime={formatSunTime}
-                  use24h={settings.timeFormat === "24h"}
-                  conditionStatus={conditionStatus}
-                  droneWeightClassLabel={
-                    WEIGHT_CLASS_OPTIONS.find(
-                      (o) => o.id === settings.droneWeightClass,
-                    )?.label ?? null
-                  }
-                />
-              </View>
+            {AdBannerComponent && (
+              <AdBannerComponent
+                key={consentCompleted ? "with-consent" : "pending"}
+                isPro={isPro}
+              />
             )}
-
-            <View className="mt-8 pt-4 border-t border-border flex-row items-center justify-center gap-1.5">
-              <Text className="text-slate-500 text-xs font-bold">
-                Powered by
-              </Text>
-              <View className="px-2">
-                <Ionicons name="logo-apple" size={14} color="#94a3b8" />
-              </View>
-              <Text className="text-slate-500 text-xs font-bold">Weather</Text>
-            </View>
-          </ScrollView>
+          </View>
 
           <InfoModal
             visible={infoMetric != null}
@@ -445,6 +483,7 @@ function AppContent() {
             setCompassEnabled={setCompassEnabled}
             setDroneWeightClass={setDroneWeightClass}
           />
+          <ConsentDialog onConsentCompleted={() => setConsentCompleted(true)} />
         </SafeAreaView>
       </LinearGradient>
     </SafeAreaProvider>
@@ -460,4 +499,5 @@ const BACKGROUND_GRADIENT: readonly [string, string, ...string[]] = [
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   safeArea: { backgroundColor: "transparent" },
+  mainContent: { flex: 1 },
 });

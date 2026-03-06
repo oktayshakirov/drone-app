@@ -20,6 +20,9 @@ module.exports = {
       infoPlist: {
         NSLocationWhenInUseUsageDescription:
           "DronePal uses your location to fetch weather for your flying site.",
+        GADApplicationIdentifier: "ca-app-pub-5852582960793521~8965039341",
+        NSUserTrackingUsageDescription:
+          "This allows us to show you relevant ads and support DronePal.",
       },
     },
     android: {
@@ -32,7 +35,17 @@ module.exports = {
       permissions: ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"],
     },
     web: { favicon: "./assets/favicon.png" },
-    plugins: ["expo-location"],
+    plugins: [
+      "expo-location",
+      "expo-tracking-transparency",
+      [
+        "react-native-google-mobile-ads",
+        {
+          androidAppId: "ca-app-pub-5852582960793521~8666820166",
+          iosAppId: "ca-app-pub-5852582960793521~8965039341",
+        },
+      ],
+    ],
     extra: {
       weatherKitTeamId: process.env.WEATHERKIT_TEAM_ID,
       weatherKitServiceId: process.env.WEATHERKIT_SERVICE_ID,

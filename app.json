@@ -27,6 +27,15 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-location"]
+    "plugins": [
+      "expo-location",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-5852582960793521~8666820166",
+          "iosAppId": "ca-app-pub-5852582960793521~8965039341"
+        }
+      ]
+    ]
   }
 }
