@@ -71,7 +71,9 @@ export function useRevenueCat(): UseRevenueCatResult {
     }
 
     init();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [isAvailable, fetchCustomerInfo]);
 
   const refresh = useCallback(async () => {
@@ -109,7 +111,14 @@ export function useRevenueCat(): UseRevenueCatResult {
   }, [isAvailable, fetchCustomerInfo]);
 
   const restore = useCallback(async () => {
-    if (!isAvailable) return { success: false, error: { code: "UNSUPPORTED", message: "Not available on this platform." } };
+    if (!isAvailable)
+      return {
+        success: false,
+        error: {
+          code: "UNSUPPORTED",
+          message: "Not available on this platform.",
+        },
+      };
     setLoading(true);
     const { customerInfo: info, error: err } = await restorePurchases();
     setCustomerInfo(info ?? null);
@@ -123,7 +132,9 @@ export function useRevenueCat(): UseRevenueCatResult {
     try {
       await RevenueCatUI.presentCustomerCenter({
         callbacks: {
-          onRestoreCompleted: () => { fetchCustomerInfo(); },
+          onRestoreCompleted: () => {
+            fetchCustomerInfo();
+          },
         },
       });
       await fetchCustomerInfo();

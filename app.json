@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "DronePal",
+    "name": "Drone Pal",
     "slug": "dronepal",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.shadev.dronepal"
+      "bundleIdentifier": "com.shadev.drone-pal"
     },
     "android": {
       "adaptiveIcon": {

@@ -1,6 +1,7 @@
 /**
  * RevenueCat SDK wrapper: init, customer info, entitlement check, restore.
  * Use only on iOS/Android (native modules); no-op on web.
+ * Follows RevenueCat quickstart: https://www.revenuecat.com/docs/getting-started/quickstart
  */
 import { Platform } from "react-native";
 import Purchases, {
@@ -26,12 +27,21 @@ export async function configureRevenueCat(): Promise<{
     return { ok: false, error: { code: "UNSUPPORTED", message: "RevenueCat is not supported on this platform." } };
   }
 
+  // Configure only once per app lifecycle (RevenueCat quickstart best practice).
+  if (isConfigured) {
+    return { ok: true };
+  }
+
   const apiKey = getRevenueCatApiKey();
   if (!apiKey?.trim()) {
     return { ok: false, error: { code: "NO_API_KEY", message: "RevenueCat API key is not set." } };
   }
 
   try {
+    // Set log level before configure; use verbose logs in development (quickstart recommendation).
+    if (__DEV__) {
+      await Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
+    }
     Purchases.configure({ apiKey });
     isConfigured = true;
     return { ok: true };
