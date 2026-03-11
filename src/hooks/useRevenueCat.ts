@@ -10,6 +10,7 @@ import {
   type RevenueCatError,
 } from "../services/revenueCat";
 import { ENTITLEMENT_PRO } from "../constants/revenueCat";
+import { useDevPro } from "../contexts/DevProContext";
 
 export interface UseRevenueCatResult {
   /** User has "Drone Pal Pro" entitlement. */
@@ -34,12 +35,27 @@ export interface UseRevenueCatResult {
   isAvailable: boolean;
 }
 
+/** Build mock CustomerInfo for dev Pro simulation. */
+function mockCustomerInfo(productId: "monthly" | "lifetime"): CustomerInfo {
+  return {
+    entitlements: {
+      active: {
+        [ENTITLEMENT_PRO]: {
+          productIdentifier: productId,
+        } as CustomerInfo["entitlements"]["active"][string],
+      },
+    },
+  } as unknown as CustomerInfo;
+}
+
 export function useRevenueCat(): UseRevenueCatResult {
+  const devPro = useDevPro();
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<RevenueCatError | null>(null);
 
   const isAvailable = Platform.OS === "ios" || Platform.OS === "android";
+  const simulatePro = devPro?.simulatePro ?? "off";
 
   const fetchCustomerInfo = useCallback(async () => {
     if (!isAvailable) {
@@ -143,11 +159,15 @@ export function useRevenueCat(): UseRevenueCatResult {
     }
   }, [isAvailable, fetchCustomerInfo]);
 
-  const isPro = hasProEntitlement(customerInfo);
+  const isSimulatedPro = __DEV__ && (simulatePro === "monthly" || simulatePro === "lifetime");
+  const effectiveCustomerInfo: CustomerInfo | null = isSimulatedPro
+    ? mockCustomerInfo(simulatePro)
+    : customerInfo;
+  const isPro = isSimulatedPro || hasProEntitlement(customerInfo);
 
   return {
     isPro,
-    customerInfo,
+    customerInfo: effectiveCustomerInfo,
     loading,
     error,
     refresh,

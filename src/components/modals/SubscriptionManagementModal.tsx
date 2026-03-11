@@ -1,5 +1,5 @@
 import React from "react";
-import { Modal, View, Text, Pressable, ScrollView } from "react-native";
+import { Modal, View, Text, Pressable, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { CustomerInfo } from "react-native-purchases";
 import { ENTITLEMENT_PRO } from "../../constants/revenueCat";
@@ -9,7 +9,6 @@ interface SubscriptionManagementModalProps {
   onClose: () => void;
   customerInfo: CustomerInfo | null;
   onOpenCustomerCenter: () => Promise<void>;
-  onOpenPaywall: () => Promise<void>;
 }
 
 function getPlanLabel(customerInfo: CustomerInfo | null): string {
@@ -27,10 +26,10 @@ export function SubscriptionManagementModal({
   onClose,
   customerInfo,
   onOpenCustomerCenter,
-  onOpenPaywall,
 }: SubscriptionManagementModalProps) {
   const planLabel = getPlanLabel(customerInfo);
   const isMonthly = planLabel === "Monthly";
+  const isLifetime = planLabel === "Lifetime";
 
   if (!visible) return null;
 
@@ -41,10 +40,7 @@ export function SubscriptionManagementModal({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <Pressable
-        className="flex-1 bg-black/60 justify-end"
-        onPress={onClose}
-      >
+      <Pressable className="flex-1 bg-black/60 justify-end" onPress={onClose}>
         <Pressable
           className="bg-card border-t border-border rounded-t-3xl max-h-[70%]"
           onPress={(e) => e.stopPropagation()}
@@ -81,7 +77,7 @@ export function SubscriptionManagementModal({
               <Ionicons name="card-outline" size={22} color="#94a3b8" />
               <View className="flex-1">
                 <Text className="text-white font-medium">
-                  Manage in App Store / Play Store
+                  Manage in {Platform.OS === "ios" ? "App Store" : "Play Store"}
                 </Text>
                 <Text className="text-slate-400 text-sm mt-0.5">
                   Cancel, update payment, or change plan
@@ -93,24 +89,25 @@ export function SubscriptionManagementModal({
             {isMonthly && (
               <View className="mt-4 p-4 rounded-xl bg-safe-green/10 border border-safe-green/30">
                 <Text className="text-safe-green font-semibold mb-1">
-                  Save money with Lifetime
+                  Tip: Save money with Pro Lifetime
                 </Text>
-                <Text className="text-slate-300 text-sm mb-3">
-                  Pay once and never worry about renewals. Upgrade to Lifetime to
-                  lock in your Pro benefits forever.
+                <Text className="text-slate-300 text-sm">
+                  Pay once and never worry about renewals. Upgrade to Pro
+                  Lifetime to lock in your Pro benefits forever.
                 </Text>
-                <Pressable
-                  onPress={async () => {
-                    onClose();
-                    await onOpenPaywall();
-                  }}
-                  className="flex-row items-center justify-center gap-2 py-2.5 rounded-lg bg-safe-green active:opacity-80"
-                >
-                  <Text className="text-white font-semibold">
-                    View Lifetime offer
-                  </Text>
-                  <Ionicons name="arrow-forward" size={16} color="#fff" />
-                </Pressable>
+              </View>
+            )}
+
+            {isLifetime && (
+              <View className="mt-4 p-4 rounded-xl bg-safe-green/10 border border-safe-green/30">
+                <Text className="text-safe-green font-semibold mb-1">
+                  Thank you for supporting DronePal
+                </Text>
+                <Text className="text-slate-300 text-sm">
+                  Your Lifetime purchase unlocks Pro benefits forever. You’ll
+                  also receive any future features and improvements we add to
+                  the app at no extra cost.
+                </Text>
               </View>
             )}
           </View>

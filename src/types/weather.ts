@@ -2,7 +2,7 @@
  * Weather types for DronePal — aligned with WeatherKit API response shape.
  */
 
-export type SafetyStatus = 'green' | 'yellow' | 'red';
+export type SafetyStatus = "green" | "yellow" | "red";
 
 export interface WindConditions {
   speedMps: number;
@@ -23,7 +23,7 @@ export interface CurrentWeatherSummary {
   precipitationChancePercent: number | null;
   precipitationType: string | null;
   sunrise: string | null; // ISO
-  sunset: string | null;  // ISO
+  sunset: string | null; // ISO
   kpIndex: number | null; // Geomagnetic Kp index (0–9), space weather
 }
 
@@ -49,7 +49,12 @@ export interface DroneClassThresholds {
   precipitationChanceYellow: number;
 }
 
-export type WeightClassId = 'sub250' | '250_500' | '500_1000' | '1000_plus' | 'custom';
+export type WeightClassId =
+  | "sub250"
+  | "250_500"
+  | "500_1000"
+  | "1000_plus"
+  | "custom";
 
 export interface WeightClass {
   id: WeightClassId;

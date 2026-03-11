@@ -151,7 +151,10 @@ export async function fetchWeather(
 
   const currentRaw = (json.currentWeather as RawCurrentWeather) ?? {};
   const hourlyRaw = (json.forecastHourly?.hours as RawHourly[]) ?? [];
-  const forecastDaily = json.forecastDaily as { days?: RawDayForecast[] } | RawDayForecast[] | undefined;
+  const forecastDaily = json.forecastDaily as
+    | { days?: RawDayForecast[] }
+    | RawDayForecast[]
+    | undefined;
   const dailyDays = Array.isArray(forecastDaily)
     ? forecastDaily
     : (forecastDaily?.days ?? []);

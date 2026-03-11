@@ -4,6 +4,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { getInfo } from "../../constants/metricCopy";
 import type { ConditionBreakdownItem } from "../../utils/goNoGo";
 import type { SafetyStatus } from "../../types/weather";
+import type { HourlyForecastItem } from "../../types/weather";
+import type { WindUnit } from "../../types/settings";
 import type { GridItem } from "../conditions/types";
 import { ConditionBox } from "../conditions/ConditionBox";
 import { WindCard } from "../conditions/WindCard";
@@ -33,6 +35,14 @@ interface InfoModalProps {
   conditionStatus?: Record<string, SafetyStatus> | null;
   formatSunTime?: (iso: string, use24h: boolean) => string;
   use24h?: boolean;
+  /** Hourly forecast for wind, cloud cover, precipitation, temperature. */
+  hourlyForecast?: HourlyForecastItem[] | null;
+  formatWind?: (mps: number, unit: WindUnit) => string;
+  formatPercent?: (n: number | null) => string;
+  formatTemp?: (celsius: number | null, useFahrenheit: boolean) => string;
+  degreesToCardinal?: (deg: number | null) => string;
+  windUnit?: WindUnit;
+  useImperial?: boolean;
 }
 
 const STATUS_LABELS: Record<SafetyStatus, string> = {
@@ -131,6 +141,88 @@ function ConditionStatusRow({ status }: { status: SafetyStatus }) {
   );
 }
 
+/** Format hour offset for forecast labels. */
+function formatHourLabel(index: number): string {
+  return index === 0 ? "Now" : `In ${index}h`;
+}
+
+/** Metrics that support hourly forecast display. */
+const FORECAST_METRICS = ["wind", "cloudCover", "precipitation", "weather"] as const;
+
+interface ForecastBlockProps {
+  hourly: HourlyForecastItem[];
+  metricKey: string;
+  formatWind: (mps: number, unit: WindUnit) => string;
+  formatPercent: (n: number | null) => string;
+  formatTemp: (celsius: number | null, useFahrenheit: boolean) => string;
+  degreesToCardinal: (deg: number | null) => string;
+  windUnit: WindUnit;
+  useImperial: boolean;
+}
+
+function ForecastBlock({
+  hourly,
+  metricKey,
+  formatWind,
+  formatPercent,
+  formatTemp,
+  degreesToCardinal,
+  windUnit,
+  useImperial,
+}: ForecastBlockProps) {
+  const indices = [0, 6, 12, 18, 24].filter((i) => i < hourly.length);
+  if (indices.length === 0) return null;
+
+  const isWind = metricKey === "wind";
+  const isSingleRow = !isWind; // cloud cover, precipitation, weather: one row
+
+  return (
+    <View className="mt-4 mb-2">
+      <Text className="section-label mb-2">24h forecast</Text>
+      <View
+        className={
+          isSingleRow
+            ? "flex-row flex-nowrap gap-1.5"
+            : "flex-row flex-wrap gap-2"
+        }
+      >
+        {indices.map((idx) => {
+          const h = hourly[idx];
+          const label = formatHourLabel(idx);
+          let value: string;
+          if (metricKey === "wind") {
+            const speed = formatWind(h.windSpeedMps, windUnit);
+            const gust =
+              h.windGustMps != null ? formatWind(h.windGustMps, windUnit) : null;
+            value = gust ? `${speed} / ${gust}` : speed;
+          } else if (metricKey === "cloudCover") {
+            value = formatPercent(h.cloudCoverPercent);
+          } else if (metricKey === "precipitation") {
+            value = formatPercent(h.precipitationChancePercent);
+          } else if (metricKey === "weather") {
+            value = formatTemp(h.temperatureCelsius, useImperial);
+          } else {
+            return null;
+          }
+          return (
+            <View
+              key={idx}
+              className={
+                isSingleRow
+                  ? "bg-slate-800/60 rounded-lg px-2 py-1.5 flex-1 min-w-0 items-center"
+                  : "bg-slate-800/60 rounded-xl px-3 py-2 flex-[0_0_48%] items-center"
+              }
+            >
+              <Text className="text-slate-400 text-xs">{label}</Text>
+              <Text className="text-white font-medium mt-0.5 text-center">{value}</Text>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 /** Large weather condition box for the weather info modal (condition label + temps). */
 function WeatherPreviewBlock({ data }: { data: WeatherPreviewData }) {
   return (
@@ -159,8 +251,25 @@ export function InfoModal({
   conditionStatus,
   formatSunTime,
   use24h = false,
+  hourlyForecast,
+  formatWind,
+  formatPercent,
+  formatTemp,
+  degreesToCardinal,
+  windUnit = "mph",
+  useImperial = true,
 }: InfoModalProps) {
   const info = metricKey ? getInfo(metricKey) : null;
+  const showForecast =
+    metricKey &&
+    FORECAST_METRICS.includes(metricKey as (typeof FORECAST_METRICS)[number]) &&
+    hourlyForecast &&
+    hourlyForecast.length > 0 &&
+    formatWind &&
+    formatPercent &&
+    formatTemp &&
+    degreesToCardinal &&
+    windUnit != null;
   const showBreakdown = metricKey === "flightConditions" && conditionBreakdown && conditionBreakdown.length > 0;
   const showConditionPreview =
     conditionPreview &&
@@ -216,6 +325,18 @@ export function InfoModal({
               <Text className="text-slate-300 mt-3 mb-4 leading-6">
                 {info.body}
               </Text>
+              {showForecast && hourlyForecast && formatWind && formatPercent && formatTemp && degreesToCardinal && (
+                <ForecastBlock
+                  hourly={hourlyForecast}
+                  metricKey={metricKey}
+                  formatWind={formatWind}
+                  formatPercent={formatPercent}
+                  formatTemp={formatTemp}
+                  degreesToCardinal={degreesToCardinal}
+                  windUnit={windUnit}
+                  useImperial={useImperial ?? true}
+                />
+              )}
               {showBreakdown && (
                 <View className="mt-2">
                   <Text className="section-label mb-2">Current conditions</Text>

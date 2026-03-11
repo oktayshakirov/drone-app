@@ -1,4 +1,4 @@
-import type { WeatherData } from '../types/weather';
+import type { WeatherData } from "../types/weather";
 
 /**
  * Mock weather for development when WeatherKit credentials are not set.
@@ -6,7 +6,7 @@ import type { WeatherData } from '../types/weather';
 export function getMockWeather(): WeatherData {
   return {
     current: {
-      conditionCode: 'PartlyCloudy',
+      conditionCode: "PartlyCloudy",
       wind: {
         speedMps: 3.5,
         gustMps: 5,
@@ -21,8 +21,8 @@ export function getMockWeather(): WeatherData {
       uvIndex: 4,
       precipitationChancePercent: 10,
       precipitationType: null,
-      sunrise: '2025-02-25T06:45:00Z',
-      sunset: '2025-02-25T17:30:00Z',
+      sunrise: "2025-02-25T06:45:00Z",
+      sunset: "2025-02-25T17:30:00Z",
       kpIndex: 2,
     },
     hourly: Array.from({ length: 24 }, (_, i) => ({

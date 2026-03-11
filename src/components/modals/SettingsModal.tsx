@@ -8,6 +8,7 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useDevPro, type SimulateProPlan } from "../../contexts/DevProContext";
 import type {
   Settings,
   Units,
@@ -106,6 +107,12 @@ interface SettingsModalProps {
   setDroneWeightClass: (id: WeightClassId) => void;
 }
 
+const SIMULATE_PRO_OPTIONS: { id: SimulateProPlan; label: string }[] = [
+  { id: "off", label: "Off" },
+  { id: "monthly", label: "Monthly" },
+  { id: "lifetime", label: "Lifetime" },
+];
+
 export function SettingsModal({
   visible,
   onClose,
@@ -116,6 +123,7 @@ export function SettingsModal({
   setCompassEnabled,
   setDroneWeightClass,
 }: SettingsModalProps) {
+  const devPro = useDevPro();
   if (!visible) return null;
 
   return (
@@ -177,6 +185,52 @@ export function SettingsModal({
                 })}
               </View>
             </View>
+
+            {/* Dev: Simulate Pro (simulators / no RevenueCat) */}
+            {__DEV__ && devPro && (
+              <View className="mb-4 pt-4 border-t border-border/50">
+                <View className="flex-row items-center gap-2 mb-2">
+                  <Ionicons
+                    name="construct-outline"
+                    size={ICON_SIZE}
+                    color="#64748b"
+                  />
+                  <Text className="section-label text-slate-500">
+                    Development
+                  </Text>
+                </View>
+                <View className="rounded-xl border border-border overflow-hidden">
+                  <Text className="text-slate-400 text-xs px-4 pt-2 pb-1">
+                    Simulate Pro (simulator)
+                  </Text>
+                  <View className="flex-row border-t border-border/50">
+                    {SIMULATE_PRO_OPTIONS.map((opt) => {
+                      const isSelected = devPro.simulatePro === opt.id;
+                      return (
+                        <TouchableOpacity
+                          key={opt.id}
+                          onPress={() => devPro.setSimulatePro(opt.id)}
+                          className={`flex-1 py-3 items-center justify-center border-r border-border/50 last:border-r-0 ${
+                            isSelected ? "bg-slate-600" : "bg-transparent"
+                          }`}
+                          activeOpacity={0.7}
+                        >
+                          <Text
+                            className={
+                              isSelected
+                                ? "text-white font-medium text-sm"
+                                : "text-slate-400 text-sm"
+                            }
+                          >
+                            {opt.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              </View>
+            )}
 
             {/* Units, Wind, Time, Compass – horizontal bars with label above */}
             <View className="mt-2 pt-4 border-t border-border/50">

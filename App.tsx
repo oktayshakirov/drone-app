@@ -35,6 +35,7 @@ import {
   conditionCodeToIcon,
 } from "./src/utils/weatherCondition";
 import { SettingsProvider, useSettings } from "./src/contexts/SettingsContext";
+import { DevProProvider } from "./src/contexts/DevProContext";
 import { evaluateSafety, getConditionBreakdown } from "./src/utils/goNoGo";
 import {
   getThresholdsForWeightClass,
@@ -56,9 +57,11 @@ import {
 } from "./src/utils/conversions";
 export default function App() {
   return (
-    <SettingsProvider>
-      <AppContent />
-    </SettingsProvider>
+    <DevProProvider>
+      <SettingsProvider>
+        <AppContent />
+      </SettingsProvider>
+    </DevProProvider>
   );
 }
 
@@ -164,7 +167,13 @@ function AppContent() {
     return () => {
       cancelled = true;
     };
-  }, [isPro, revenueCatAvailable, coords?.latitude, coords?.longitude, refetchWeather]);
+  }, [
+    isPro,
+    revenueCatAvailable,
+    coords?.latitude,
+    coords?.longitude,
+    refetchWeather,
+  ]);
 
   const handlePullToRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -540,7 +549,7 @@ function AppContent() {
                 >
                   <Ionicons name="card-outline" size={16} color="#94a3b8" />
                   <Text className="text-slate-400 text-sm">
-                    Manage subscriptions: {proPlanLabel}
+                    Manage subscription: {proPlanLabel}
                   </Text>
                 </Pressable>
               )}
@@ -583,6 +592,13 @@ function AppContent() {
             conditionStatus={conditionStatus}
             formatSunTime={formatSunTime}
             use24h={settings.timeFormat === "24h"}
+            hourlyForecast={weather?.hourly ?? null}
+            formatWind={formatWind}
+            formatPercent={formatPercent}
+            formatTemp={formatTemp}
+            degreesToCardinal={degreesToCardinal}
+            windUnit={settings.windUnit}
+            useImperial={settings.units === "imperial"}
           />
           {coords && (
             <MapModal
@@ -610,7 +626,6 @@ function AppContent() {
             onClose={() => setSubscriptionManagementVisible(false)}
             customerInfo={customerInfo}
             onOpenCustomerCenter={showCustomerCenter}
-            onOpenPaywall={showPaywall}
           />
           <ConsentDialog onConsentCompleted={() => setConsentCompleted(true)} />
         </SafeAreaView>
