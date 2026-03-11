@@ -3,7 +3,11 @@
  * Match these to your RevenueCat dashboard and App Store Connect / Play Console.
  */
 
-/** Entitlement identifier for "Drone Pal Pro" — create this in RevenueCat dashboard. */
+/**
+ * Entitlement identifier — must match RevenueCat dashboard **exactly**
+ * (including spaces/casing). Yours is "Drone Pal Pro".
+ * https://www.revenuecat.com/docs/getting-started/entitlements
+ */
 export const ENTITLEMENT_PRO = "Drone Pal Pro";
 
 /** Product identifiers (must match App Store Connect / Google Play). */

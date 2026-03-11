@@ -13,5 +13,6 @@ export {
   LocationPickerModal,
   MapModal,
   SettingsModal,
+  SubscriptionManagementModal,
 } from "./modals";
 export type { WeatherPreviewData } from "./modals";

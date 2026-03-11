@@ -10,18 +10,19 @@ The app implementation follows the [RevenueCat SDK Quickstart](https://www.reven
 
 ### What Pro unlocks
 
-| Benefit                               | Free                          | Pro                                       | Notes                                                                                                                                |
-| ------------------------------------- | ----------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| **No ads**                            | Banner shown                  | No ads                                    | Implemented via `isPro` → hide `AdBanner`.                                                                                           |
-| **Real-time weather refresh**         | On app open / location change | Manual refresh button                     | Pro gets "Refresh now" to refetch conditions.                                                                                        |
-| **Location change for trip planning** | Single location only          | Save / switch locations for trip planning | Pro can set multiple locations and switch for pre-flight planning.                                                                   |
-| **Smart safety alerts**               | —                             | Status indicators + Go/No-Go              | Pro sees green/yellow/red dots on conditions and the Go/No-Go summary. _Later:_ free users will not see these; they become Pro-only. |
+| Benefit                                                     | Free                          | Pro                                       | Notes                                                              |
+| ----------------------------------------------------------- | ----------------------------- | ----------------------------------------- | ------------------------------------------------------------------ |
+| **No ads**                                                  | Banner shown                  | No ads                                    | Implemented via `isPro` → hide `AdBanner`.                         |
+| **Real-time weather refresh**                               | Pull-to-refresh shows paywall; auto-refresh once per 12h on app open | Pull-to-refresh works | Free: pull shows paywall. Auto-refresh every 12h for free.         |
+| **Location change for trip planning**                       | Tap opens paywall             | Full location picker                      | No lock icons; tap opens paywall.                                  |
+| **Map search**                                              | Search button opens paywall   | Full map + search                          | Map view is free for all; searching new location is Pro.           |
+| **Extended conditions**                                      | Values in grid only           | Info modal with explanations, breakdown   | Tap on conditions/Go-No-Go/Weather opens paywall for free.         |
 
-**Current implementation:** **No ads** is enforced. Safety indicators (conditions + Go/No-Go) are currently visible to all; they will be gated for Pro once you hide them for free users. Trip planning and manual refresh are to be implemented and gated with `useRevenueCat().isPro`.
+**Current implementation:** No lock icons. Paywall triggers on: condition/Go-No-Go/Weather tap, location change, pull-to-refresh (free), map search (free). Red/yellow condition indicators shown to all. Subscription button next to Settings.
 
 ### Entitlement
 
-- **Identifier:** `pro` (used in code as `ENTITLEMENT_PRO`).
+- **Identifier:** `Drone Pal Pro` (used in code as `ENTITLEMENT_PRO` — must match dashboard exactly).
 - When the user has an active **monthly** or **lifetime** purchase that is attached to the `pro` entitlement in RevenueCat, `isPro` is `true`.
 
 ---
@@ -30,10 +31,10 @@ The app implementation follows the [RevenueCat SDK Quickstart](https://www.reven
 
 Two products: **monthly** and **lifetime**. Apple’s minimum for this tier is $2.99/mo, so monthly is set to $2.99. Lifetime is a one-time purchase at $29.99 (discount vs 12 months).
 
-| Plan         | Product ID | Price        | Notes                                                                                       |
-| ------------ | ---------- | ------------ | ------------------------------------------------------------------------------------------- |
-| **Monthly**  | `monthly`  | **$2.99**/mo | Auto-renewable. Set in App Store Connect / Play Console.                                    |
-| **Lifetime** | `lifetime` | **$29.99**   | One-time. Non-consumable (iOS) / one-time (Android).                                        |
+| Plan         | Product ID | Price        | Notes                                                    |
+| ------------ | ---------- | ------------ | -------------------------------------------------------- |
+| **Monthly**  | `monthly`  | **$2.99**/mo | Auto-renewable. Set in App Store Connect / Play Console. |
+| **Lifetime** | `lifetime` | **$29.99**   | One-time. Non-consumable (iOS) / one-time (Android).     |
 
 Use these exact prices in the stores so the paywall copy (“12 months for the price of 12, locked in forever”) stays consistent.
 
@@ -60,7 +61,7 @@ Use these exact prices in the stores so the paywall copy (“12 months for the p
 
 1. In the project, go to **Entitlements**.
 2. **+ New**.
-3. **Identifier:** `pro` (must match `ENTITLEMENT_PRO` in code).
+3. **Identifier:** `Drone Pal Pro` (must match `ENTITLEMENT_PRO` in code exactly).
 4. **Display name:** e.g. "DronePal Pro".
 5. Save.
 
@@ -81,8 +82,8 @@ Linking is done when you add these IDs to an **Offering** (below). RevenueCat wi
 2. **+ New Offering**.
 3. **Identifier:** `default` (or the identifier you use when calling `getOfferings()` in code; RevenueCat UI often uses "default").
 4. **Packages** in this offering:
-   - **Monthly:** Type **Monthly**, attach product ID `monthly`. Attach to entitlement **`pro`**.
-   - **Lifetime:** Type **Lifetime** (or **Custom** with identifier `lifetime`), attach product ID `lifetime`. Attach to entitlement **`pro`**.
+   - **Monthly:** Type **Monthly**, attach product ID `monthly`. Attach to entitlement **Drone Pal Pro**.
+   - **Lifetime:** Type **Lifetime** (or **Custom** with identifier `lifetime`), attach product ID `lifetime`. Attach to entitlement **Drone Pal Pro**.
 5. Set **Lifetime** as the default or “best value” package if you want it highlighted.
 6. Save.
 
@@ -146,18 +147,50 @@ Linking is done when you add these IDs to an **Offering** (below). RevenueCat wi
 
 ## 6. App configuration (already in code)
 
-- **Entitlement:** `pro` in `src/constants/revenueCat.ts` (`ENTITLEMENT_PRO`).
+- **Entitlement identifier:** Must match RevenueCat **exactly** — currently `Drone Pal Pro` in `src/constants/revenueCat.ts` (`ENTITLEMENT_PRO`). If you rename the entitlement in RevenueCat, update this constant.
 - **Product IDs:** `monthly`, `lifetime`.
-- **Env:** `.env` has `REVENUECAT_API_KEY` (or per-platform keys). Use public/sandbox keys for testing.
+- **Env:** `.env` / `app.config.js` `extra` has RevenueCat public API keys per platform.
+
+### 6.1 Test without opening the paywall
+
+Before wiring `presentPaywall()` everywhere, confirm the chain works:
+
+1. **Customer info** — Should succeed on device/simulator if the API key is valid (no store products required).
+   - `Purchases.getCustomerInfo()` → `activeEntitlementKeys` empty until purchase; after sandbox purchase should include `Drone Pal Pro`.
+
+2. **Offerings + products** — Require the store to return `monthly` and `lifetime` (real device + sandbox, or simulator + StoreKit config + run from Xcode).
+   - Call `verifyRevenueCatReadiness()` from `src/services/revenueCatVerify.ts` after configure (e.g. in `__DEV__` after `useRevenueCat` init, or from a temporary Settings button):
+     - `offerings.ok` + `packageCount > 0` → paywall can load packages.
+     - `products.count === 2` (or both IDs present) → StoreKit/App Store Connect sees your products.
+   - Example:
+     ```ts
+     import { verifyRevenueCatReadiness } from "../services/revenueCatVerify";
+     // after app is configured:
+     const v = await verifyRevenueCatReadiness();
+     console.log(JSON.stringify(v, null, 2));
+     ```
+
+3. **RevenueCat dashboard** — **Customers** tab with **View sandbox data** on: after a sandbox purchase, the customer should show the entitlement.
+
+### 6.2 App Store Connect: “First IAP must be submitted with a new app version”
+
+Apple shows this in the In-App Purchases / Subscriptions tab. It means:
+
+- The **first** subscription or IAP for the app must be **attached to an app version** when you submit that version to App Review (version page → **In-App Purchases and Subscriptions** → select your products → submit binary + IAP together).
+- **You can still test in sandbox** before that: create the IAPs, use a **development build** on a **real device** with a **Sandbox Apple ID**. Sandbox does not require the IAP to be approved or attached to a submitted version.
+- After the first binary + IAP set is approved, additional IAPs can be submitted from the IAP section without a new binary in many cases.
+
+So: **local/sandbox testing** is fine pre-submission; **production** purchases require the version + first IAP submission flow Apple describes.
 
 ---
 
 ## 7. App behavior summary
 
-- **Entitlement check:** `useRevenueCat().isPro` is `true` when the user has the `pro` entitlement (monthly or lifetime).
-- **Subscribe:** A "Go Pro" / "Subscribe" button calls `showPaywall()` and presents the RevenueCat paywall.
-- **Restore:** "Restore purchases" calls `restore()` and refreshes customer info.
-- **Manage:** When Pro, "Manage subscription" can call `showCustomerCenter()`.
+- **Entitlement check:** `useRevenueCat().isPro` is `true` when the user has the **Drone Pal Pro** entitlement (monthly or lifetime).
+- **Subscribe / IAP button:** Top-right (next to Settings): pricetag icon for free users → `showPaywall()`; person icon for Pro → `showCustomerCenter()`.
+- **Locked features:** Location, refresh, Go/No-Go details, Weather details, all condition grid items, and Map show lock icon for free users; tap opens paywall.
+- **Restore:** Via Customer Center (Pro) or paywall flow.
+- **Manage:** When Pro, subscription button opens `showCustomerCenter()`.
 
 ---
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Platform } from "react-native";
 import type { CustomerInfo } from "react-native-purchases";
-import RevenueCatUI from "react-native-purchases-ui";
+import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 import {
   configureRevenueCat,
   getCustomerInfo,
@@ -102,8 +102,8 @@ export function useRevenueCat(): UseRevenueCatResult {
         displayCloseButton: true,
       });
       await fetchCustomerInfo();
-      // PAYWALL_RESULT: purchased, restored, cancelled, not_presented, error
-      return result !== "not_presented";
+      // Paywall was shown if result is not NOT_PRESENTED (user already had entitlement).
+      return result !== PAYWALL_RESULT.NOT_PRESENTED;
     } catch {
       await fetchCustomerInfo();
       return false;

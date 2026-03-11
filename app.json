@@ -24,9 +24,6 @@
       "edgeToEdgeEnabled": true,
       "package": "com.shadev.dronepal"
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
     "plugins": [
       "expo-location",
       [

@@ -1,12 +1,15 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   View,
   Text,
+  Image,
   ScrollView,
   ActivityIndicator,
   StyleSheet,
   Pressable,
+  RefreshControl,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -24,6 +27,7 @@ import {
   LocationPickerModal,
   MapModal,
   SettingsModal,
+  SubscriptionManagementModal,
 } from "./src/components";
 import { ConsentDialog } from "./src/components/ads";
 import {
@@ -36,6 +40,7 @@ import {
   getThresholdsForWeightClass,
   WEIGHT_CLASS_OPTIONS,
 } from "./src/constants/droneThresholds";
+import { ENTITLEMENT_PRO } from "./src/constants/revenueCat";
 import { useLocation } from "./src/hooks/useLocation";
 import { useWeather } from "./src/hooks/useWeather";
 import { useRevenueCat } from "./src/hooks/useRevenueCat";
@@ -57,6 +62,9 @@ export default function App() {
   );
 }
 
+const LAST_FREE_REFRESH_KEY = "dronepal_lastFreeRefresh";
+const FREE_REFRESH_INTERVAL_MS = 12 * 60 * 60 * 1000;
+
 function AppContent() {
   const [infoMetric, setInfoMetric] = useState<string | null>(null);
   const [locationPickerVisible, setLocationPickerVisible] = useState(false);
@@ -65,6 +73,9 @@ function AppContent() {
   const [AdBannerComponent, setAdBannerComponent] =
     useState<React.ComponentType<{ isPro: boolean }> | null>(null);
   const [consentCompleted, setConsentCompleted] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [subscriptionManagementVisible, setSubscriptionManagementVisible] =
+    useState(false);
 
   const {
     settings,
@@ -89,10 +100,12 @@ function AppContent() {
     error: weatherError,
     loading: weatherLoading,
     isMock,
+    refetch: refetchWeather,
   } = useWeather(coords?.latitude ?? null, coords?.longitude ?? null, env);
 
   const {
     isPro,
+    customerInfo,
     loading: revenueCatLoading,
     error: revenueCatError,
     showPaywall,
@@ -100,6 +113,17 @@ function AppContent() {
     isAvailable: revenueCatAvailable,
     restore,
   } = useRevenueCat();
+
+  const proPlanLabel = useMemo(() => {
+    if (!customerInfo?.entitlements?.active) return "Pro";
+    const ent = customerInfo.entitlements.active[ENTITLEMENT_PRO] as
+      | { productIdentifier?: string }
+      | undefined;
+    const id = ent?.productIdentifier;
+    if (id === "lifetime") return "Lifetime";
+    if (id === "monthly") return "Monthly";
+    return "Pro";
+  }, [customerInfo]);
 
   useEffect(() => {
     if (Constants.appOwnership === "expo") return;
@@ -115,6 +139,45 @@ function AppContent() {
       }
     })();
   }, []);
+
+  // Free users: auto-refresh conditions once every 12h when app is opened.
+  useEffect(() => {
+    if (isPro || !revenueCatAvailable || !coords) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem(LAST_FREE_REFRESH_KEY);
+        const last = raw ? parseInt(raw, 10) : 0;
+        if (Date.now() - last >= FREE_REFRESH_INTERVAL_MS) {
+          refetchWeather();
+          if (!cancelled) {
+            await AsyncStorage.setItem(
+              LAST_FREE_REFRESH_KEY,
+              String(Date.now()),
+            );
+          }
+        }
+      } catch {
+        // Ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isPro, revenueCatAvailable, coords?.latitude, coords?.longitude, refetchWeather]);
+
+  const handlePullToRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      if (!isPro && revenueCatAvailable) {
+        await showPaywall();
+      } else {
+        await refetchWeather();
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }, [isPro, revenueCatAvailable, showPaywall, refetchWeather]);
 
   const heroMinMax = useMemo(() => {
     if (!weather?.hourly?.length)
@@ -299,11 +362,24 @@ function AppContent() {
               className="flex-1"
               contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
               showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={handlePullToRefresh}
+                  tintColor="#94a3b8"
+                />
+              }
             >
               {coords && (
                 <View className="flex-row items-center justify-between mb-3 py-1.5">
                   <Pressable
-                    onPress={() => setLocationPickerVisible(true)}
+                    onPress={() => {
+                      if (!isPro && revenueCatAvailable) {
+                        showPaywall();
+                      } else if (isPro || !revenueCatAvailable) {
+                        setLocationPickerVisible(true);
+                      }
+                    }}
                     className="flex-row items-center gap-2 flex-1 min-w-0 rounded-lg active:opacity-80"
                   >
                     <Ionicons name="location" size={16} color="#94a3b8" />
@@ -326,6 +402,19 @@ function AppContent() {
                       color="#94a3b8"
                     />
                   </Pressable>
+                  {revenueCatAvailable && !isPro && (
+                    <Pressable
+                      onPress={showPaywall}
+                      className="ml-2 p-1 -m-1 rounded-lg active:opacity-70"
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    >
+                      <Image
+                        source={require("./assets/pro.png")}
+                        style={{ width: 27, height: 27 }}
+                        resizeMode="contain"
+                      />
+                    </Pressable>
+                  )}
                 </View>
               )}
               <LocationPickerModal
@@ -352,7 +441,13 @@ function AppContent() {
                   >
                     <GoNoGoCard
                       status={safetyStatus}
-                      onPress={() => setInfoMetric("flightConditions")}
+                      onPress={() => {
+                        if (!isPro && revenueCatAvailable) {
+                          showPaywall();
+                        } else {
+                          setInfoMetric("flightConditions");
+                        }
+                      }}
                     />
                   </View>
                   <View
@@ -366,7 +461,13 @@ function AppContent() {
                       )}
                       metricKey="weather"
                       shape="wide"
-                      onPress={(key) => setInfoMetric(key)}
+                      onPress={(key) => {
+                        if (!isPro && revenueCatAvailable) {
+                          showPaywall();
+                        } else {
+                          setInfoMetric(key);
+                        }
+                      }}
                       iconName={
                         conditionCodeToIcon(
                           weather.current.conditionCode,
@@ -410,8 +511,15 @@ function AppContent() {
                   <ConditionsGrid
                     items={conditionsGridItems}
                     onMetricPress={(key) => {
-                      if (key === "map") setMapModalVisible(true);
-                      else setInfoMetric(key);
+                      if (key === "map") {
+                        setMapModalVisible(true);
+                        return;
+                      }
+                      if (!isPro && revenueCatAvailable) {
+                        showPaywall();
+                        return;
+                      }
+                      setInfoMetric(key);
                     }}
                     formatSunTime={formatSunTime}
                     use24h={settings.timeFormat === "24h"}
@@ -425,6 +533,17 @@ function AppContent() {
                 </View>
               )}
 
+              {isPro && revenueCatAvailable && (
+                <Pressable
+                  onPress={() => setSubscriptionManagementVisible(true)}
+                  className="mt-6 py-3 flex-row items-center justify-center gap-2 rounded-lg active:opacity-80"
+                >
+                  <Ionicons name="card-outline" size={16} color="#94a3b8" />
+                  <Text className="text-slate-400 text-sm">
+                    Manage subscriptions: {proPlanLabel}
+                  </Text>
+                </Pressable>
+              )}
               <View className="mt-8 pt-4 border-t border-border flex-row items-center justify-center gap-1.5">
                 <Text className="text-slate-500 text-xs font-bold">
                   Powered by
@@ -471,6 +590,9 @@ function AppContent() {
               onClose={() => setMapModalVisible(false)}
               latitude={coords.latitude}
               longitude={coords.longitude}
+              isPro={isPro}
+              showPaywall={showPaywall}
+              revenueCatAvailable={revenueCatAvailable}
             />
           )}
           <SettingsModal
@@ -482,6 +604,13 @@ function AppContent() {
             setTimeFormat={setTimeFormat}
             setCompassEnabled={setCompassEnabled}
             setDroneWeightClass={setDroneWeightClass}
+          />
+          <SubscriptionManagementModal
+            visible={subscriptionManagementVisible}
+            onClose={() => setSubscriptionManagementVisible(false)}
+            customerInfo={customerInfo}
+            onOpenCustomerCenter={showCustomerCenter}
+            onOpenPaywall={showPaywall}
           />
           <ConsentDialog onConsentCompleted={() => setConsentCompleted(true)} />
         </SafeAreaView>

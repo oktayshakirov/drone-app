@@ -13,7 +13,7 @@ export function useWeather(
   data: WeatherData | null;
   error: string | null;
   loading: boolean;
-  refetch: () => void;
+  refetch: () => Promise<void>;
   isMock: boolean;
 } {
   const [data, setData] = useState<WeatherData | null>(null);
@@ -21,10 +21,10 @@ export function useWeather(
   const [loading, setLoading] = useState(true);
   const [isMock, setIsMock] = useState(false);
 
-  const load = useCallback(() => {
+  const load = useCallback((): Promise<void> => {
     if (latitude == null || longitude == null) {
       setLoading(false);
-      return;
+      return Promise.resolve();
     }
     const hasEnv =
       env?.teamId && env?.serviceId && env?.keyId && env?.privateKeyPem;
@@ -33,12 +33,12 @@ export function useWeather(
       setIsMock(true);
       setError(null);
       setLoading(false);
-      return;
+      return Promise.resolve();
     }
     setLoading(true);
     setError(null);
     setIsMock(false);
-    fetchWeather(latitude, longitude, env)
+    return fetchWeather(latitude, longitude, env)
       .then(async (weather) => {
         const kp = await fetchCurrentKpIndex();
         setData({
@@ -56,5 +56,5 @@ export function useWeather(
     load();
   }, [load]);
 
-  return { data, error, loading, refetch: load, isMock };
+  return { data, error, loading, refetch: useCallback(() => load(), [load]), isMock };
 }

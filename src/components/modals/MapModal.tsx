@@ -65,6 +65,10 @@ interface MapModalProps {
   onClose: () => void;
   latitude: number;
   longitude: number;
+  /** When false and search is tapped, show paywall instead of opening search. */
+  isPro?: boolean;
+  showPaywall?: () => Promise<void>;
+  revenueCatAvailable?: boolean;
 }
 
 export function MapModal({
@@ -72,6 +76,9 @@ export function MapModal({
   onClose,
   latitude,
   longitude,
+  isPro = true,
+  showPaywall,
+  revenueCatAvailable = false,
 }: MapModalProps) {
   return (
     <Modal
@@ -87,6 +94,9 @@ export function MapModal({
             latitude={latitude}
             longitude={longitude}
             onClose={onClose}
+            isPro={isPro}
+            showPaywall={showPaywall}
+            revenueCatAvailable={revenueCatAvailable}
           />
         </LinearGradient>
       </SafeAreaProvider>
@@ -99,6 +109,9 @@ function MapModalContent({
   latitude,
   longitude,
   onClose,
+  isPro,
+  showPaywall,
+  revenueCatAvailable,
 }: MapModalProps & { onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const { settings, setMapType } = useSettings();
@@ -387,7 +400,13 @@ function MapModalContent({
               />
             </Pressable>
             <Pressable
-              onPress={() => setSearchVisible((v) => !v)}
+              onPress={() => {
+                if (!isPro && revenueCatAvailable && showPaywall) {
+                  showPaywall();
+                } else {
+                  setSearchVisible((v) => !v);
+                }
+              }}
               style={styles.mapButton}
             >
               <Ionicons
