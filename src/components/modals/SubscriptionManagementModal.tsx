@@ -9,9 +9,14 @@ interface SubscriptionManagementModalProps {
   onClose: () => void;
   customerInfo: CustomerInfo | null;
   onOpenCustomerCenter: () => Promise<void>;
+  isReviewerPro?: boolean;
 }
 
-function getPlanLabel(customerInfo: CustomerInfo | null): string {
+function getPlanLabel(
+  customerInfo: CustomerInfo | null,
+  isReviewerPro: boolean,
+): string {
+  if (isReviewerPro) return "Reviewer 24h";
   if (!customerInfo?.entitlements?.active) return "Pro";
   const entitlement = customerInfo.entitlements.active[ENTITLEMENT_PRO];
   if (!entitlement) return "Pro";
@@ -26,10 +31,12 @@ export function SubscriptionManagementModal({
   onClose,
   customerInfo,
   onOpenCustomerCenter,
+  isReviewerPro = false,
 }: SubscriptionManagementModalProps) {
-  const planLabel = getPlanLabel(customerInfo);
+  const planLabel = getPlanLabel(customerInfo, isReviewerPro);
   const isMonthly = planLabel === "Monthly";
   const isLifetime = planLabel === "Lifetime";
+  const isReviewer = planLabel === "Reviewer 24h";
 
   if (!visible) return null;
 
@@ -67,24 +74,38 @@ export function SubscriptionManagementModal({
               </Text>
             </View>
 
-            <Pressable
-              onPress={async () => {
-                onClose();
-                await onOpenCustomerCenter();
-              }}
-              className="flex-row items-center gap-3 py-3 px-4 rounded-xl bg-surface border border-border active:opacity-80"
-            >
-              <Ionicons name="card-outline" size={22} color="#94a3b8" />
-              <View className="flex-1">
-                <Text className="text-white font-medium">
-                  Manage in {Platform.OS === "ios" ? "App Store" : "Play Store"}
+            {!isReviewer && (
+              <Pressable
+                onPress={async () => {
+                  onClose();
+                  await onOpenCustomerCenter();
+                }}
+                className="flex-row items-center gap-3 py-3 px-4 rounded-xl bg-surface border border-border active:opacity-80 mb-4"
+              >
+                <Ionicons name="card-outline" size={22} color="#94a3b8" />
+                <View className="flex-1">
+                  <Text className="text-white font-medium">
+                    Manage in {Platform.OS === "ios" ? "App Store" : "Play Store"}
+                  </Text>
+                  <Text className="text-slate-400 text-sm mt-0.5">
+                    Cancel, update payment, or change plan
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
+              </Pressable>
+            )}
+
+            {isReviewer && (
+              <View className="mb-4 p-4 rounded-xl bg-slate-700/50 border border-border">
+                <Text className="text-slate-300 font-semibold mb-1">
+                  Reviewer access (24 hours)
                 </Text>
-                <Text className="text-slate-400 text-sm mt-0.5">
-                  Cancel, update payment, or change plan
+                <Text className="text-slate-400 text-sm">
+                  You have full Pro access for 24 hours. This is a temporary
+                  unlock for app review—no subscription or purchase required.
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
-            </Pressable>
+            )}
 
             {isMonthly && (
               <View className="mt-4 p-4 rounded-xl bg-safe-green/10 border border-safe-green/30">
@@ -98,7 +119,7 @@ export function SubscriptionManagementModal({
               </View>
             )}
 
-            {isLifetime && (
+            {isLifetime && !isReviewer && (
               <View className="mt-4 p-4 rounded-xl bg-safe-green/10 border border-safe-green/30">
                 <Text className="text-safe-green font-semibold mb-1">
                   Thank you for supporting DronePal

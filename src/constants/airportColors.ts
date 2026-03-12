@@ -37,13 +37,12 @@ export function getAirportTypeLabel(type: AirportType): string {
   return AIRPORT_TYPE_LABELS[type] ?? type.replace(/_/g, " ");
 }
 
-/** Approximate no-fly / controlled zone radius in meters for circle overlay. */
 export const AIRPORT_TYPE_RADIUS_M: Record<AirportType, number> = {
-  large_airport: 5000,
-  medium_airport: 3000,
-  small_airport: 1500,
-  heliport: 500,
-  seaplane_base: 1000,
+  large_airport: 9300,
+  medium_airport: 8100,
+  small_airport: 5600,
+  heliport: 1500,
+  seaplane_base: 2800,
 };
 
 export function getAirportPinColor(type: AirportType): string {

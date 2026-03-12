@@ -11,6 +11,7 @@ import {
 } from "../services/revenueCat";
 import { ENTITLEMENT_PRO } from "../constants/revenueCat";
 import { useDevPro } from "../contexts/DevProContext";
+import { useReviewerPro } from "../contexts/ReviewerProContext";
 
 export interface UseRevenueCatResult {
   /** User has "Drone Pal Pro" entitlement. */
@@ -50,6 +51,7 @@ function mockCustomerInfo(productId: "monthly" | "lifetime"): CustomerInfo {
 
 export function useRevenueCat(): UseRevenueCatResult {
   const devPro = useDevPro();
+  const reviewerPro = useReviewerPro();
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<RevenueCatError | null>(null);
@@ -160,10 +162,13 @@ export function useRevenueCat(): UseRevenueCatResult {
   }, [isAvailable, fetchCustomerInfo]);
 
   const isSimulatedPro = __DEV__ && (simulatePro === "monthly" || simulatePro === "lifetime");
+  const isReviewerPro = reviewerPro?.isReviewerPro ?? false;
   const effectiveCustomerInfo: CustomerInfo | null = isSimulatedPro
     ? mockCustomerInfo(simulatePro)
-    : customerInfo;
-  const isPro = isSimulatedPro || hasProEntitlement(customerInfo);
+    : isReviewerPro
+      ? mockCustomerInfo("lifetime")
+      : customerInfo;
+  const isPro = isSimulatedPro || isReviewerPro || hasProEntitlement(customerInfo);
 
   return {
     isPro,

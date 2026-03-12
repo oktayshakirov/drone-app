@@ -28,6 +28,7 @@ import {
   MapModal,
   SettingsModal,
   SubscriptionManagementModal,
+  ReviewerPinModal,
 } from "./src/components";
 import { ConsentDialog } from "./src/components/ads";
 import {
@@ -36,6 +37,7 @@ import {
 } from "./src/utils/weatherCondition";
 import { SettingsProvider, useSettings } from "./src/contexts/SettingsContext";
 import { DevProProvider } from "./src/contexts/DevProContext";
+import { ReviewerProProvider, useReviewerPro } from "./src/contexts/ReviewerProContext";
 import { evaluateSafety, getConditionBreakdown } from "./src/utils/goNoGo";
 import {
   getThresholdsForWeightClass,
@@ -58,9 +60,11 @@ import {
 export default function App() {
   return (
     <DevProProvider>
-      <SettingsProvider>
-        <AppContent />
-      </SettingsProvider>
+      <ReviewerProProvider>
+        <SettingsProvider>
+          <AppContent />
+        </SettingsProvider>
+      </ReviewerProProvider>
     </DevProProvider>
   );
 }
@@ -79,6 +83,7 @@ function AppContent() {
   const [refreshing, setRefreshing] = useState(false);
   const [subscriptionManagementVisible, setSubscriptionManagementVisible] =
     useState(false);
+  const [reviewerPinModalVisible, setReviewerPinModalVisible] = useState(false);
 
   const {
     settings,
@@ -106,6 +111,7 @@ function AppContent() {
     refetch: refetchWeather,
   } = useWeather(coords?.latitude ?? null, coords?.longitude ?? null, env);
 
+  const reviewerPro = useReviewerPro();
   const {
     isPro,
     customerInfo,
@@ -118,6 +124,7 @@ function AppContent() {
   } = useRevenueCat();
 
   const proPlanLabel = useMemo(() => {
+    if (reviewerPro?.isReviewerPro) return "Reviewer 24h";
     if (!customerInfo?.entitlements?.active) return "Pro";
     const ent = customerInfo.entitlements.active[ENTITLEMENT_PRO] as
       | { productIdentifier?: string }
@@ -126,7 +133,7 @@ function AppContent() {
     if (id === "lifetime") return "Lifetime";
     if (id === "monthly") return "Monthly";
     return "Pro";
-  }, [customerInfo]);
+  }, [customerInfo, reviewerPro?.isReviewerPro]);
 
   useEffect(() => {
     if (Constants.appOwnership === "expo") return;
@@ -414,6 +421,8 @@ function AppContent() {
                   {revenueCatAvailable && !isPro && (
                     <Pressable
                       onPress={showPaywall}
+                      onLongPress={() => setReviewerPinModalVisible(true)}
+                      delayLongPress={800}
                       className="ml-2 p-1 -m-1 rounded-lg active:opacity-70"
                       hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                     >
@@ -626,6 +635,14 @@ function AppContent() {
             onClose={() => setSubscriptionManagementVisible(false)}
             customerInfo={customerInfo}
             onOpenCustomerCenter={showCustomerCenter}
+            isReviewerPro={reviewerPro?.isReviewerPro ?? false}
+          />
+          <ReviewerPinModal
+            visible={reviewerPinModalVisible}
+            onClose={() => setReviewerPinModalVisible(false)}
+            onSuccess={async () => {
+              await reviewerPro?.unlockReviewerPro();
+            }}
           />
           <ConsentDialog onConsentCompleted={() => setConsentCompleted(true)} />
         </SafeAreaView>

@@ -14,5 +14,6 @@ export {
   MapModal,
   SettingsModal,
   SubscriptionManagementModal,
+  ReviewerPinModal,
 } from "./modals";
 export type { WeatherPreviewData } from "./modals";

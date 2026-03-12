@@ -59,16 +59,33 @@ const VALID_TYPES: AirportType[] = [
   "seaplane_base",
 ];
 
-function parseType(raw: string): AirportType {
-  if (VALID_TYPES.includes(raw as AirportType)) return raw as AirportType;
+/** Parse type from API (OurAirports/AirportRoutes or variations). */
+function parseType(raw: string, scheduledService?: boolean): AirportType {
+  const normalized = (raw ?? "").toLowerCase().trim().replace(/\s+/g, "_");
+  if (VALID_TYPES.includes(normalized as AirportType)) {
+    const type = normalized as AirportType;
+    // scheduled_service + small_airport likely means commercial → medium
+    if (type === "small_airport" && scheduledService) return "medium_airport";
+    return type;
+  }
+  // Accept common variations (e.g. "large", "Large Airport", "medium")
+  if (normalized.startsWith("large")) return "large_airport";
+  if (normalized.startsWith("medium")) return "medium_airport";
+  if (normalized.startsWith("small")) return "small_airport";
+  if (scheduledService) return "medium_airport";
   return "small_airport";
 }
 
-/** Map OSM aeroway tag to our AirportType */
-function osmTypeToAirportType(aeroway: string): AirportType {
+/** Map OSM aeroway + tags to our AirportType. OSM has no size; infer from IATA. */
+function osmTypeToAirportType(aeroway: string, tags?: Record<string, string>): AirportType {
   const t = (aeroway || "").toLowerCase();
   if (t === "helipad" || t === "heliport") return "heliport";
   if (t === "seaplane_base") return "seaplane_base";
+  if (t === "aerodrome") {
+    // OSM lacks size. Airports with IATA codes are typically medium/large (commercial).
+    const iata = (tags?.iata ?? "").trim();
+    if (/^[A-Z]{3}$/i.test(iata)) return "medium_airport";
+  }
   return "small_airport";
 }
 
@@ -104,7 +121,7 @@ async function fetchFromOverpass(
         name: String(name),
         city: el.tags?.addr_city ?? "",
         country: el.tags?.addr_country ?? "",
-        type: osmTypeToAirportType(aeroway),
+        type: osmTypeToAirportType(aeroway, el.tags),
         lat: Number(latEl),
         lon: Number(lonEl),
       });
@@ -151,7 +168,7 @@ export async function fetchAirportsInRadius(
           name: item.name ?? "",
           city: item.city ?? "",
           country: item.country ?? "",
-          type: parseType(item.type ?? "small_airport"),
+          type: parseType(item.type ?? "small_airport", item.scheduled_service),
           lat: Number(item.lat),
           lon: Number(item.lon),
           elevation: item.elevation,
