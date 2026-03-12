@@ -15,11 +15,17 @@ import {
   Keyboard,
   ActivityIndicator,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import MapView from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
-import { fetchAirportsInRadius, type Airport, type AirportType } from "../../api/airports";
+import {
+  fetchAirportsInRadius,
+  type Airport,
+  type AirportType,
+} from "../../api/airports";
 import { useSettings } from "../../contexts/SettingsContext";
 import {
   AIRPORT_TYPE_COLORS,
@@ -40,12 +46,6 @@ import {
   AIRPORT_FETCH_THROTTLE_MS,
   type SearchResult,
 } from "../map";
-
-const BACKGROUND_GRADIENT: readonly [string, string, ...string[]] = [
-  "#000000",
-  "#0a0a0a",
-  "#111111",
-];
 
 const FALLBACK_TOP_INSET = Platform.select({
   ios: 47,
@@ -88,7 +88,7 @@ export function MapModal({
       onRequestClose={onClose}
     >
       <SafeAreaProvider>
-        <LinearGradient colors={BACKGROUND_GRADIENT} style={styles.gradient}>
+        <View style={styles.background}>
           <MapModalContent
             visible={visible}
             latitude={latitude}
@@ -98,7 +98,7 @@ export function MapModal({
             showPaywall={showPaywall}
             revenueCatAvailable={revenueCatAvailable}
           />
-        </LinearGradient>
+        </View>
       </SafeAreaProvider>
     </Modal>
   );
@@ -121,7 +121,9 @@ function MapModalContent({
 
   const mapRef = useRef<React.ComponentRef<typeof MapView> | null>(null);
   const airportFetchAbortRef = useRef<AbortController | null>(null);
-  const lastFetchedCenterRef = useRef<{ lat: number; lng: number } | null>(null);
+  const lastFetchedCenterRef = useRef<{ lat: number; lng: number } | null>(
+    null,
+  );
   const lastFetchedAtRef = useRef<number>(0);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchAbortRef = useRef<AbortController | null>(null);
@@ -143,9 +145,9 @@ function MapModalContent({
       latitudeDelta: DEFAULT_LATITUDE_DELTA,
       longitudeDelta: DEFAULT_LONGITUDE_DELTA,
     };
-    const map = mapRef.current as
-      | { animateToRegion?: (r: typeof region, d?: number) => void }
-      | null;
+    const map = mapRef.current as {
+      animateToRegion?: (r: typeof region, d?: number) => void;
+    } | null;
     map?.animateToRegion?.(region, 350);
   }, []);
 
@@ -433,7 +435,7 @@ function MapModalContent({
 }
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
+  background: { flex: 1, backgroundColor: "#181818" },
   container: { flex: 1 },
   header: {
     flexDirection: "row",

@@ -12,7 +12,6 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import Constants from "expo-constants";
 import {
@@ -37,7 +36,10 @@ import {
 } from "./src/utils/weatherCondition";
 import { SettingsProvider, useSettings } from "./src/contexts/SettingsContext";
 import { DevProProvider } from "./src/contexts/DevProContext";
-import { ReviewerProProvider, useReviewerPro } from "./src/contexts/ReviewerProContext";
+import {
+  ReviewerProProvider,
+  useReviewerPro,
+} from "./src/contexts/ReviewerProContext";
 import { evaluateSafety, getConditionBreakdown } from "./src/utils/goNoGo";
 import {
   getThresholdsForWeightClass,
@@ -353,20 +355,20 @@ function AppContent() {
   if (loading && !weather) {
     return (
       <SafeAreaProvider>
-        <LinearGradient colors={BACKGROUND_GRADIENT} style={styles.gradient}>
+        <View style={styles.background}>
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator size="large" color="#22c55e" />
             <Text className="text-slate-400 mt-4">Loading weather…</Text>
             <StatusBar style="light" />
           </View>
-        </LinearGradient>
+        </View>
       </SafeAreaProvider>
     );
   }
 
   return (
     <SafeAreaProvider>
-      <LinearGradient colors={BACKGROUND_GRADIENT} style={styles.gradient}>
+      <View style={styles.background}>
         <SafeAreaView
           className="flex-1"
           style={styles.safeArea}
@@ -646,19 +648,13 @@ function AppContent() {
           />
           <ConsentDialog onConsentCompleted={() => setConsentCompleted(true)} />
         </SafeAreaView>
-      </LinearGradient>
+      </View>
     </SafeAreaProvider>
   );
 }
 
-const BACKGROUND_GRADIENT: readonly [string, string, ...string[]] = [
-  "#000000",
-  "#0a0a0a",
-  "#111111",
-];
-
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
-  safeArea: { backgroundColor: "transparent" },
+  background: { flex: 1, backgroundColor: "#181818" },
+  safeArea: { backgroundColor: "#181818" },
   mainContent: { flex: 1 },
 });

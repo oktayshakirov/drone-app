@@ -12,7 +12,7 @@ module.exports = {
     splash: {
       image: "./assets/splash-icon.png",
       resizeMode: "contain",
-      backgroundColor: "#0f172a",
+      backgroundColor: "#181818",
     },
     ios: {
       supportsTablet: true,
@@ -34,7 +34,7 @@ module.exports = {
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
-        backgroundColor: "#0f172a",
+        backgroundColor: "#181818",
       },
       edgeToEdgeEnabled: true,
       package: "com.shadev.dronepal",
