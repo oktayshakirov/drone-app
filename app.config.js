@@ -33,7 +33,7 @@ module.exports = {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/adaptive-icon.png",
+        foregroundImage: "./assets/splash-icon.png",
         backgroundColor: "#181818",
       },
       edgeToEdgeEnabled: true,

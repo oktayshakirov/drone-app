@@ -35,6 +35,8 @@ import {
   conditionCodeToIcon,
 } from "./src/utils/weatherCondition";
 import { SettingsProvider, useSettings } from "./src/contexts/SettingsContext";
+import { OnboardingProvider, useOnboarding } from "./src/contexts/OnboardingContext";
+import { OnboardingScreen } from "./src/components/onboarding";
 import { DevProProvider } from "./src/contexts/DevProContext";
 import {
   ReviewerProProvider,
@@ -64,11 +66,35 @@ export default function App() {
     <DevProProvider>
       <ReviewerProProvider>
         <SettingsProvider>
-          <AppContent />
+          <AppWithOnboardingAndPaywall />
         </SettingsProvider>
       </ReviewerProProvider>
     </DevProProvider>
   );
+}
+
+function AppWithOnboardingAndPaywall() {
+  const { showPaywall } = useRevenueCat();
+  return (
+    <OnboardingProvider onComplete={() => showPaywall()}>
+      <AppWithOnboarding />
+    </OnboardingProvider>
+  );
+}
+
+function AppWithOnboarding() {
+  const { isOnboardingActive, isLoading } = useOnboarding();
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#000000", justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#f3e8db" />
+      </View>
+    );
+  }
+  if (isOnboardingActive) {
+    return <OnboardingScreen />;
+  }
+  return <AppContent />;
 }
 
 const LAST_FREE_REFRESH_KEY = "dronepal_lastFreeRefresh";

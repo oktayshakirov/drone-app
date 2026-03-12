@@ -27,6 +27,10 @@ export function ConsentDialog({ onConsentCompleted }: ConsentDialogProps) {
   const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
+    if (Platform.OS !== "android") {
+      onConsentCompleted();
+      return;
+    }
     AsyncStorage.getItem(TRACKING_CONSENT_KEY).then((storedConsent) => {
       if (storedConsent === null) {
         setModalVisible(true);
@@ -34,7 +38,7 @@ export function ConsentDialog({ onConsentCompleted }: ConsentDialogProps) {
         onConsentCompleted();
       }
     });
-  }, []);
+  }, [onConsentCompleted]);
 
   const handleAllow = async () => {
     await AsyncStorage.setItem(TRACKING_CONSENT_KEY, "granted");
@@ -57,6 +61,10 @@ export function ConsentDialog({ onConsentCompleted }: ConsentDialogProps) {
     setModalVisible(false);
     onConsentCompleted();
   };
+
+  if (Platform.OS !== "android") {
+    return null;
+  }
 
   return (
     <Modal
@@ -82,27 +90,17 @@ export function ConsentDialog({ onConsentCompleted }: ConsentDialogProps) {
           </Text>
 
           <View style={styles.buttonContainer}>
-            {Platform.OS === "android" ? (
-              <>
-                <TouchableOpacity
-                  onPress={handleDontAllow}
-                  style={styles.button}
-                >
-                  <Text style={styles.buttonText}>Don't Allow</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={handleAllow} style={styles.button}>
-                  <Text style={[styles.buttonText, styles.agreeButton]}>
-                    Allow
-                  </Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <TouchableOpacity onPress={handleAllow} style={styles.button}>
-                <Text style={[styles.buttonText, styles.continueButton]}>
-                  Continue
-                </Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              onPress={handleDontAllow}
+              style={styles.button}
+            >
+              <Text style={styles.buttonText}>Don't Allow</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleAllow} style={styles.button}>
+              <Text style={[styles.buttonText, styles.agreeButton]}>
+                Allow
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -177,9 +175,6 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     color: COLORS.highlight,
-  },
-  continueButton: {
-    fontWeight: "600",
   },
   agreeButton: {
     fontWeight: "600",
