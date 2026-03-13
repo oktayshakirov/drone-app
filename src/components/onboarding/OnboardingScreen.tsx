@@ -16,10 +16,12 @@ import { useSettings } from "../../contexts/SettingsContext";
 import { WEIGHT_CLASS_OPTIONS } from "../../constants/droneThresholds";
 import type { Units, WindUnit, TimeFormat } from "../../types/settings";
 import type { WeightClassId } from "../../constants/droneThresholds";
+import { OptionList } from "../ui/OptionList";
 
-const ACCENT = "#f3e8db";
-const SELECTED_BG = "#f3e8db";
-const SELECTED_TEXT = "#1e293b";
+const ACCENT = "#FFC682";
+const STATUS_GREEN_COLOR = "#22c55e";
+const STATUS_YELLOW_COLOR = "#eab308";
+const STATUS_RED_COLOR = "#ef4444";
 
 const UNITS_OPTIONS: { id: Units; label: string }[] = [
   { id: "imperial", label: "Imperial (°F, mi)" },
@@ -41,11 +43,11 @@ const TIME_OPTIONS: { id: TimeFormat; label: string }[] = [
 function getStepIcon(stepId: string): keyof typeof Ionicons.glyphMap {
   switch (stepId) {
     case "go-n-go":
-      return "checkmark-done-circle";
+      return "flag-outline";
     case "forecast-map":
       return "map";
     case "weight":
-      return "fitness";
+      return "scale-outline";
     case "preferences":
       return "options-outline";
     case "done":
@@ -66,8 +68,13 @@ export function OnboardingScreen() {
     skipOnboarding,
     getCurrentStepData,
   } = useOnboarding();
-  const { settings, setUnits, setWindUnit, setTimeFormat, setDroneWeightClass } =
-    useSettings();
+  const {
+    settings,
+    setUnits,
+    setWindUnit,
+    setTimeFormat,
+    setDroneWeightClass,
+  } = useSettings();
 
   const stepData = getCurrentStepData();
 
@@ -99,11 +106,14 @@ export function OnboardingScreen() {
 
         <ScrollView
           style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            stepData.id === "done" && styles.scrollContentCentered,
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {!isSettingsStep && (
+          {stepData.type !== "preferences" && (
             <View style={styles.iconContainer}>
               {stepData.id === "welcome" ? (
                 <Image
@@ -112,128 +122,130 @@ export function OnboardingScreen() {
                   resizeMode="contain"
                 />
               ) : (
-                <View style={styles.iconCircle}>
-                  <Ionicons
-                    name={getStepIcon(stepData.id)}
-                    size={56}
-                    color="#ffffff"
-                  />
-                </View>
+                <Ionicons
+                  name={getStepIcon(stepData.id)}
+                  size={80}
+                  color={ACCENT}
+                />
               )}
             </View>
           )}
 
           <Text style={styles.title}>{stepData.title}</Text>
-          <Text style={styles.description}>{stepData.description}</Text>
+          {stepData.description ? (
+            <Text style={styles.description}>{stepData.description}</Text>
+          ) : null}
+
+          {stepData.id === "go-n-go" && (
+            <View style={styles.statusIndicators}>
+              <View style={styles.statusIndicatorItem}>
+                <View
+                  style={[
+                    styles.statusDot,
+                    { backgroundColor: STATUS_GREEN_COLOR },
+                  ]}
+                />
+                <Text style={styles.statusLabel}>Go</Text>
+                <Text style={styles.statusSublabel}>Safe to fly</Text>
+              </View>
+              <View style={styles.statusIndicatorItem}>
+                <View
+                  style={[
+                    styles.statusDot,
+                    { backgroundColor: STATUS_YELLOW_COLOR },
+                  ]}
+                />
+                <Text style={styles.statusLabel}>Caution</Text>
+                <Text style={styles.statusSublabel}>Check conditions</Text>
+              </View>
+              <View style={styles.statusIndicatorItem}>
+                <View
+                  style={[
+                    styles.statusDot,
+                    { backgroundColor: STATUS_RED_COLOR },
+                  ]}
+                />
+                <Text style={styles.statusLabel}>No go</Text>
+                <Text style={styles.statusSublabel}>Stay grounded</Text>
+              </View>
+            </View>
+          )}
+
+          {stepData.id === "forecast-map" && (
+            <View style={styles.noFlyVisual}>
+              <View style={styles.noFlyZoneItem}>
+                <View
+                  style={[
+                    styles.noFlyBubble,
+                    { backgroundColor: "rgba(239, 68, 68, 0.35)" },
+                  ]}
+                >
+                  <Text style={styles.noFlyEmoji}>✈️</Text>
+                </View>
+                <Text style={styles.noFlyZoneLabel}>Airports</Text>
+                <Text style={styles.noFlyZoneSublabel}>Restricted</Text>
+              </View>
+              <View style={styles.noFlyZoneItem}>
+                <View
+                  style={[
+                    styles.noFlyBubble,
+                    { backgroundColor: "rgba(236, 72, 153, 0.35)" },
+                  ]}
+                >
+                  <Text style={styles.noFlyEmoji}>🚁</Text>
+                </View>
+                <Text style={styles.noFlyZoneLabel}>Heliports</Text>
+                <Text style={styles.noFlyZoneSublabel}>Restricted</Text>
+              </View>
+              <View style={styles.noFlyZoneItem}>
+                <View
+                  style={[
+                    styles.noFlyBubble,
+                    { backgroundColor: "rgba(234, 179, 8, 0.35)" },
+                  ]}
+                >
+                  <Text style={styles.noFlyEmoji}>⚠️</Text>
+                </View>
+                <Text style={styles.noFlyZoneLabel}>Caution</Text>
+                <Text style={styles.noFlyZoneSublabel}>Check rules</Text>
+              </View>
+            </View>
+          )}
 
           {stepData.type === "weightClass" && (
             <View style={styles.pickerBlock}>
-              {WEIGHT_CLASS_OPTIONS.map((opt) => {
-                const isSelected = settings.droneWeightClass === opt.id;
-                return (
-                  <TouchableOpacity
-                    key={opt.id}
-                    onPress={() => setDroneWeightClass(opt.id as WeightClassId)}
-                    style={[
-                      styles.optionRow,
-                      isSelected && styles.optionRowSelected,
-                    ]}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[
-                        styles.optionText,
-                        isSelected && styles.optionTextSelected,
-                      ]}
-                    >
-                      {opt.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+              <OptionList
+                options={WEIGHT_CLASS_OPTIONS}
+                value={settings.droneWeightClass}
+                onSelect={(id) => setDroneWeightClass(id as WeightClassId)}
+                getKey={(id) => id}
+              />
             </View>
           )}
 
           {stepData.type === "preferences" && (
             <View style={styles.preferencesBlock}>
               <Text style={styles.preferencesLabel}>Units</Text>
-              <View style={styles.pickerRow}>
-                {UNITS_OPTIONS.map((opt) => {
-                  const isSelected = settings.units === opt.id;
-                  return (
-                    <TouchableOpacity
-                      key={opt.id}
-                      onPress={() => setUnits(opt.id)}
-                      style={[
-                        styles.optionBox,
-                        isSelected && styles.optionBoxSelected,
-                      ]}
-                      activeOpacity={0.7}
-                    >
-                      <Text
-                        style={[
-                          styles.optionBoxText,
-                          isSelected && styles.optionTextSelected,
-                        ]}
-                      >
-                        {opt.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+              <OptionList
+                options={UNITS_OPTIONS}
+                value={settings.units}
+                onSelect={setUnits}
+                getKey={(id) => id}
+              />
               <Text style={styles.preferencesLabel}>Wind speed</Text>
-              <View style={styles.pickerRow}>
-                {WIND_OPTIONS.map((opt) => {
-                  const isSelected = settings.windUnit === opt.id;
-                  return (
-                    <TouchableOpacity
-                      key={opt.id}
-                      onPress={() => setWindUnit(opt.id)}
-                      style={[
-                        styles.optionBoxSmall,
-                        isSelected && styles.optionBoxSelected,
-                      ]}
-                      activeOpacity={0.7}
-                    >
-                      <Text
-                        style={[
-                          styles.optionBoxText,
-                          isSelected && styles.optionTextSelected,
-                        ]}
-                      >
-                        {opt.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+              <OptionList
+                options={WIND_OPTIONS}
+                value={settings.windUnit}
+                onSelect={setWindUnit}
+                getKey={(id) => id}
+              />
               <Text style={styles.preferencesLabel}>Time format</Text>
-              <View style={styles.pickerRow}>
-                {TIME_OPTIONS.map((opt) => {
-                  const isSelected = settings.timeFormat === opt.id;
-                  return (
-                    <TouchableOpacity
-                      key={opt.id}
-                      onPress={() => setTimeFormat(opt.id)}
-                      style={[
-                        styles.optionBox,
-                        isSelected && styles.optionBoxSelected,
-                      ]}
-                      activeOpacity={0.7}
-                    >
-                      <Text
-                        style={[
-                          styles.optionBoxText,
-                          isSelected && styles.optionTextSelected,
-                        ]}
-                      >
-                        {opt.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+              <OptionList
+                options={TIME_OPTIONS}
+                value={settings.timeFormat}
+                onSelect={setTimeFormat}
+                getKey={(id) => id}
+              />
             </View>
           )}
         </ScrollView>
@@ -317,17 +329,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 24,
   },
+  scrollContentCentered: {
+    flexGrow: 1,
+    justifyContent: "center",
+  },
   iconContainer: {
     alignItems: "center",
     marginBottom: 32,
-  },
-  iconCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: "rgba(243, 232, 219, 0.25)",
-    justifyContent: "center",
-    alignItems: "center",
   },
   splashIcon: {
     width: 200,
@@ -342,12 +350,78 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   description: {
-    fontSize: 16,
+    fontSize: 18,
     color: "#94a3b8",
     textAlign: "center",
-    lineHeight: 24,
+    lineHeight: 27,
     marginBottom: 28,
     paddingHorizontal: 4,
+  },
+  statusIndicators: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "flex-start",
+    gap: 20,
+    marginBottom: 32,
+    paddingHorizontal: 8,
+  },
+  statusIndicatorItem: {
+    flex: 1,
+    alignItems: "center",
+    maxWidth: 100,
+  },
+  statusDot: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginBottom: 10,
+  },
+  statusLabel: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#f1f5f9",
+    marginBottom: 2,
+  },
+  statusSublabel: {
+    fontSize: 12,
+    color: "#94a3b8",
+    textAlign: "center",
+  },
+  noFlyVisual: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "flex-start",
+    gap: 20,
+    marginBottom: 32,
+    paddingHorizontal: 8,
+  },
+  noFlyZoneItem: {
+    flex: 1,
+    alignItems: "center",
+    maxWidth: 100,
+  },
+  noFlyBubble: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  noFlyEmoji: {
+    fontSize: 26,
+  },
+  noFlyZoneLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#f1f5f9",
+    marginBottom: 2,
+    textAlign: "center",
+  },
+  noFlyZoneSublabel: {
+    fontSize: 11,
+    color: "#94a3b8",
+    textAlign: "center",
   },
   preferencesBlock: {
     marginBottom: 24,
@@ -361,63 +435,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   pickerBlock: {
-    gap: 10,
     marginBottom: 24,
-  },
-  optionRow: {
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#334155",
-    backgroundColor: "#0f172a",
-  },
-  optionRowSelected: {
-    backgroundColor: SELECTED_BG,
-    borderColor: SELECTED_BG,
-  },
-  optionText: {
-    fontSize: 16,
-    color: "#e2e8f0",
-  },
-  optionTextSelected: {
-    color: SELECTED_TEXT,
-    fontWeight: "600",
-  },
-  pickerRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginBottom: 24,
-    justifyContent: "center",
-  },
-  optionBox: {
-    minWidth: "45%",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#334155",
-    backgroundColor: "#0f172a",
-    alignItems: "center",
-  },
-  optionBoxSmall: {
-    minWidth: "22%",
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#334155",
-    backgroundColor: "#0f172a",
-    alignItems: "center",
-  },
-  optionBoxSelected: {
-    backgroundColor: SELECTED_BG,
-    borderColor: SELECTED_BG,
-  },
-  optionBoxText: {
-    fontSize: 15,
-    color: "#e2e8f0",
   },
   dots: {
     flexDirection: "row",

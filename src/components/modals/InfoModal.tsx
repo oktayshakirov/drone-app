@@ -10,6 +10,7 @@ import type { GridItem } from "../conditions/types";
 import { ConditionBox } from "../conditions/ConditionBox";
 import { WindCard } from "../conditions/WindCard";
 import { SunshineCurveCard } from "../conditions/SunshineCurveCard";
+import { InfoList } from "../ui/InfoList";
 
 /** Data to show the weather condition (hero-style) in the info modal when metricKey is "weather". */
 export interface WeatherPreviewData {
@@ -155,7 +156,6 @@ interface ForecastBlockProps {
   formatWind: (mps: number, unit: WindUnit) => string;
   formatPercent: (n: number | null) => string;
   formatTemp: (celsius: number | null, useFahrenheit: boolean) => string;
-  degreesToCardinal: (deg: number | null) => string;
   windUnit: WindUnit;
   useImperial: boolean;
 }
@@ -166,7 +166,6 @@ function ForecastBlock({
   formatWind,
   formatPercent,
   formatTemp,
-  degreesToCardinal,
   windUnit,
   useImperial,
 }: ForecastBlockProps) {
@@ -174,52 +173,33 @@ function ForecastBlock({
   if (indices.length === 0) return null;
 
   const isWind = metricKey === "wind";
-  const isSingleRow = !isWind; // cloud cover, precipitation, weather: one row
+  const items = indices.map((idx) => {
+    const h = hourly[idx];
+    const label = formatHourLabel(idx);
+    let value: string;
+    if (metricKey === "wind") {
+      const speed = formatWind(h.windSpeedMps, windUnit);
+      const gust =
+        h.windGustMps != null ? formatWind(h.windGustMps, windUnit) : null;
+      value = gust ? `${speed} / ${gust}` : speed;
+    } else if (metricKey === "cloudCover") {
+      value = formatPercent(h.cloudCoverPercent);
+    } else if (metricKey === "precipitation") {
+      value = formatPercent(h.precipitationChancePercent);
+    } else if (metricKey === "weather") {
+      value = formatTemp(h.temperatureCelsius, useImperial);
+    } else {
+      value = "—";
+    }
+    return { label, value };
+  });
 
   return (
-    <View className="mt-4 mb-2">
-      <Text className="section-label mb-2">24h forecast</Text>
-      <View
-        className={
-          isSingleRow
-            ? "flex-row flex-nowrap gap-1.5"
-            : "flex-row flex-wrap gap-2"
-        }
-      >
-        {indices.map((idx) => {
-          const h = hourly[idx];
-          const label = formatHourLabel(idx);
-          let value: string;
-          if (metricKey === "wind") {
-            const speed = formatWind(h.windSpeedMps, windUnit);
-            const gust =
-              h.windGustMps != null ? formatWind(h.windGustMps, windUnit) : null;
-            value = gust ? `${speed} / ${gust}` : speed;
-          } else if (metricKey === "cloudCover") {
-            value = formatPercent(h.cloudCoverPercent);
-          } else if (metricKey === "precipitation") {
-            value = formatPercent(h.precipitationChancePercent);
-          } else if (metricKey === "weather") {
-            value = formatTemp(h.temperatureCelsius, useImperial);
-          } else {
-            return null;
-          }
-          return (
-            <View
-              key={idx}
-              className={
-                isSingleRow
-                  ? "bg-slate-800/60 rounded-lg px-2 py-1.5 flex-1 min-w-0 items-center"
-                  : "bg-slate-800/60 rounded-xl px-3 py-2 flex-[0_0_48%] items-center"
-              }
-            >
-              <Text className="text-slate-400 text-xs">{label}</Text>
-              <Text className="text-white font-medium mt-0.5 text-center">{value}</Text>
-            </View>
-          );
-        })}
-      </View>
-    </View>
+    <InfoList
+      title="24h forecast"
+      items={items}
+      layout={isWind ? "wrap" : "row"}
+    />
   );
 }
 
@@ -268,7 +248,6 @@ export function InfoModal({
     formatWind &&
     formatPercent &&
     formatTemp &&
-    degreesToCardinal &&
     windUnit != null;
   const showBreakdown = metricKey === "flightConditions" && conditionBreakdown && conditionBreakdown.length > 0;
   const showConditionPreview =
@@ -325,14 +304,13 @@ export function InfoModal({
               <Text className="text-slate-300 mt-3 mb-4 leading-6">
                 {info.body}
               </Text>
-              {showForecast && hourlyForecast && formatWind && formatPercent && formatTemp && degreesToCardinal && (
+              {showForecast && hourlyForecast && formatWind && formatPercent && formatTemp && (
                 <ForecastBlock
                   hourly={hourlyForecast}
                   metricKey={metricKey}
                   formatWind={formatWind}
                   formatPercent={formatPercent}
                   formatTemp={formatTemp}
-                  degreesToCardinal={degreesToCardinal}
                   windUnit={windUnit}
                   useImperial={useImperial ?? true}
                 />

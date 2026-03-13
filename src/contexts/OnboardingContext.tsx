@@ -43,42 +43,41 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
     type: "feature",
     title: "Welcome to Drone Pal",
     description:
-      "Your weather and safety companion for drone flying. Get Go/No-Go conditions, forecasts, and no-fly zones at a glance.",
+      "Drone Pal is your preflight companion. Get an instant Go or No Go for any drone, using live weather and safety data.",
   },
   {
     id: "go-n-go",
     type: "feature",
-    title: "Go / No-Go at a Glance",
+    title: "One Glance. One Decision.",
     description:
-      "We combine wind, gusts, visibility, and precipitation into a simple green, yellow, or red status—tailored to your drone’s weight class.",
+      "We turn wind, gusts, visibility, and rain into a single status. Green means safe to fly. Yellow means use caution. Red means stay grounded. All tuned to your drone’s weight.",
   },
   {
     id: "forecast-map",
     type: "feature",
-    title: "Forecast & No-Fly Map",
+    title: "No Fly Zone Map",
     description:
-      "See 24h forecasts for wind, cloud cover, and precipitation. Check the map for airports and caution zones before you fly.",
+      "See airports, heliports, and caution zones at a glance. A simple reference so you stay compliant and fly safe.",
   },
   {
     id: "weight",
     type: "weightClass",
-    title: "Your Drone Weight Class",
+    title: "Pick Your Weight Class",
     description:
-      "Lighter drones need stricter limits. This sets your Go/No-Go thresholds.",
+      "Not all drones handle wind the same. Under 250g to 1kg plus: we'll set your safety thresholds so alerts match your rig.",
   },
   {
     id: "preferences",
     type: "preferences",
-    title: "Your Preferences",
-    description:
-      "Choose units, wind speed, and time format for how conditions are displayed.",
+    title: "Your way",
+    description: "",
   },
   {
     id: "done",
     type: "feature",
     title: "You’re All Set",
     description:
-      "Drone Pal Pro includes many useful features - give it a try if you’d like, or use the app for free. Tap Get Started to continue. Safe flight!",
+      "Try Drone Pal Pro for extra features, or fly free. Tap Get Started and fly safe.",
   },
 ];
 

@@ -17,6 +17,7 @@ import type {
 } from "../../types/settings";
 import type { WeightClassId } from "../../constants/droneThresholds";
 import { WEIGHT_CLASS_OPTIONS } from "../../constants/droneThresholds";
+import { OptionList } from "../ui/OptionList";
 
 const UNITS_OPTIONS: { id: Units; label: string }[] = [
   { id: "imperial", label: "Imperial (°F, mi)" },
@@ -40,61 +41,8 @@ const COMPASS_OPTIONS: { id: boolean; label: string }[] = [
   { id: false, label: "Off" },
 ];
 
-const ICON_COLOR = "#94a3b8";
 const ICON_SIZE = 18;
-
-function OptionBar<T extends string | boolean>({
-  label,
-  iconName,
-  options,
-  value,
-  onSelect,
-  getKey,
-}: {
-  label: string;
-  iconName: keyof typeof Ionicons.glyphMap;
-  options: { id: T; label: string }[];
-  value: T;
-  onSelect: (id: T) => void;
-  getKey: (id: T) => string;
-}) {
-  return (
-    <View className="mb-4">
-      <View className="flex-row items-center gap-2 mb-2">
-        <Ionicons name={iconName} size={ICON_SIZE} color={ICON_COLOR} />
-        <Text className="section-label">{label}</Text>
-      </View>
-      <View className="flex-row rounded-xl border border-border overflow-hidden bg-card">
-        {options.map((opt, index) => {
-          const isSelected = value === opt.id;
-          const isLast = index === options.length - 1;
-          return (
-            <TouchableOpacity
-              key={getKey(opt.id)}
-              onPress={() => onSelect(opt.id)}
-              style={{ flex: 1 }}
-              className={`py-3 items-center justify-center ${
-                !isLast ? "border-r border-border" : ""
-              } ${isSelected ? "bg-slate-600" : "bg-transparent"}`}
-              activeOpacity={0.7}
-            >
-              <Text
-                className={
-                  isSelected
-                    ? "text-white font-medium text-sm"
-                    : "text-slate-400 text-sm"
-                }
-                numberOfLines={1}
-              >
-                {opt.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  );
-}
+const SELECTED_BG = "rgba(255, 198, 130, 0.2)";
 
 interface SettingsModalProps {
   visible: boolean;
@@ -159,31 +107,12 @@ export function SettingsModal({
                 <Ionicons name="airplane-outline" size={20} color="#94a3b8" />
                 <Text className="section-label">Drone weight class</Text>
               </View>
-              <View className="rounded-xl border border-border overflow-hidden">
-                {WEIGHT_CLASS_OPTIONS.map((opt) => {
-                  const isSelected = settings.droneWeightClass === opt.id;
-                  return (
-                    <TouchableOpacity
-                      key={opt.id}
-                      onPress={() => setDroneWeightClass(opt.id)}
-                      className={`py-3 px-4 border-b border-border/50 last:border-b-0 ${
-                        isSelected ? "bg-slate-600" : ""
-                      }`}
-                      activeOpacity={0.7}
-                    >
-                      <Text
-                        className={
-                          isSelected
-                            ? "text-white font-medium"
-                            : "text-slate-300"
-                        }
-                      >
-                        {opt.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+              <OptionList
+                options={WEIGHT_CLASS_OPTIONS}
+                value={settings.droneWeightClass}
+                onSelect={setDroneWeightClass}
+                getKey={(id) => id}
+              />
             </View>
 
             {/* Dev: Simulate Pro (simulators / no RevenueCat) */}
@@ -210,9 +139,11 @@ export function SettingsModal({
                         <TouchableOpacity
                           key={opt.id}
                           onPress={() => devPro.setSimulatePro(opt.id)}
-                          className={`flex-1 py-3 items-center justify-center border-r border-border/50 last:border-r-0 ${
-                            isSelected ? "bg-slate-600" : "bg-transparent"
-                          }`}
+                          style={[
+                            { flex: 1 },
+                            isSelected && { backgroundColor: SELECTED_BG },
+                          ]}
+                          className="py-3 items-center justify-center border-r border-border/50 last:border-r-0 bg-transparent"
                           activeOpacity={0.7}
                         >
                           <Text
@@ -232,9 +163,10 @@ export function SettingsModal({
               </View>
             )}
 
-            {/* Units, Wind, Time, Compass – horizontal bars with label above */}
+            {/* Units, Wind, Time, Compass – horizontal OptionList */}
             <View className="mt-2 pt-4 border-t border-border/50">
-              <OptionBar
+              <OptionList
+                layout="horizontal"
                 label="Units"
                 iconName="thermometer-outline"
                 options={UNITS_OPTIONS}
@@ -242,7 +174,8 @@ export function SettingsModal({
                 onSelect={setUnits}
                 getKey={(id) => id}
               />
-              <OptionBar
+              <OptionList
+                layout="horizontal"
                 label="Wind unit"
                 iconName="flag-outline"
                 options={WIND_OPTIONS}
@@ -250,7 +183,8 @@ export function SettingsModal({
                 onSelect={setWindUnit}
                 getKey={(id) => id}
               />
-              <OptionBar
+              <OptionList
+                layout="horizontal"
                 label="Time format"
                 iconName="time-outline"
                 options={TIME_OPTIONS}
@@ -258,7 +192,8 @@ export function SettingsModal({
                 onSelect={setTimeFormat}
                 getKey={(id) => id}
               />
-              <OptionBar
+              <OptionList
+                layout="horizontal"
                 label="Compass"
                 iconName="compass-outline"
                 options={COMPASS_OPTIONS}
