@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Path, Circle } from "react-native-svg";
-import { BOX_HEIGHT } from "./types";
+import { BOX_HEIGHT, BOX_HEIGHT_TABLET } from "./types";
 
 const ICON_COLOR = "#94a3b8";
 const SUN_COLOR = "#e8a030";
@@ -11,24 +11,24 @@ const CURVE_GREY = "#6b7280";
 
 const SIZES = {
   default: {
-    iconSize: 18,
+    iconSize: 20,
     arcWidth: 88,
     arcHeight: 24,
     paddingX: 8,
     endDotR: 4,
     sunDotR: 6,
     strokeWidth: 2.5,
-    minHeight: 72,
+    minHeight: BOX_HEIGHT,
   },
   large: {
-    iconSize: 24,
+    iconSize: 26,
     arcWidth: 140,
     arcHeight: 38,
     paddingX: 12,
     endDotR: 6,
     sunDotR: 8,
     strokeWidth: 3,
-    minHeight: 100,
+    minHeight: BOX_HEIGHT_TABLET,
   },
 } as const;
 
@@ -90,16 +90,16 @@ export function SunshineCurveCard({
       <View className="flex-1 min-w-0">
         <View className="flex-row items-center gap-1.5">
           <Ionicons name="sunny-outline" size={s.iconSize} color={ICON_COLOR} />
-          <Text className={size === "large" ? "section-label text-base" : "section-label"}>Sunrise</Text>
+          <Text className={size === "large" ? "section-label text-base" : "section-label text-xs"}>Sunrise</Text>
         </View>
-        <Text className={size === "large" ? "text-white font-semibold text-lg mt-0.5" : "text-white font-semibold text-sm mt-0.5"}>
+        <Text className={size === "large" ? "text-white font-semibold text-lg mt-0.5" : "text-white font-semibold text-base mt-0.5"}>
           {sunriseStr}
         </Text>
         <View className="flex-row items-center gap-1.5 mt-1">
           <Ionicons name="sunny-outline" size={s.iconSize} color={ICON_COLOR} />
-          <Text className={size === "large" ? "section-label text-base" : "section-label"}>Sunset</Text>
+          <Text className={size === "large" ? "section-label text-base" : "section-label text-xs"}>Sunset</Text>
         </View>
-        <Text className={size === "large" ? "text-white font-semibold text-lg mt-0.5" : "text-white font-semibold text-sm mt-0.5"}>
+        <Text className={size === "large" ? "text-white font-semibold text-lg mt-0.5" : "text-white font-semibold text-base mt-0.5"}>
           {sunsetStr}
         </Text>
       </View>

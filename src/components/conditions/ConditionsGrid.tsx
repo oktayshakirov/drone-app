@@ -1,12 +1,12 @@
 import React from "react";
-import { View, Text } from "react-native";
+import { View, Text, useWindowDimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ConditionBox } from "./ConditionBox";
 import { SunshineCurveCard } from "./SunshineCurveCard";
 import { MapCard } from "../map";
 import { WindCard } from "./WindCard";
 import type { GridItem } from "./types";
-import { CUBE_FLEX, WIDE_FLEX } from "./types";
+import { CUBE_FLEX, WIDE_FLEX, TABLET_BREAKPOINT_WIDTH } from "./types";
 import type { SafetyStatus } from "../../types/weather";
 
 export type { GridItem } from "./types";
@@ -88,6 +88,8 @@ export function ConditionsGrid({
   conditionStatus,
   droneWeightClassLabel,
 }: ConditionsGridProps) {
+  const { width } = useWindowDimensions();
+  const boxSize = width >= TABLET_BREAKPOINT_WIDTH ? "large" : "default";
   const rows = React.useMemo(() => buildRows(items), [items]);
 
   const renderCell = (item: GridItem) => {
@@ -99,6 +101,7 @@ export function ConditionsGrid({
           onPress={() => onMetricPress("map")}
           latitude={item.latitude}
           longitude={item.longitude}
+          size={boxSize}
         />
       );
     }
@@ -111,6 +114,7 @@ export function ConditionsGrid({
           directionDegrees={item.directionDegrees ?? null}
           onPress={() => onMetricPress("wind")}
           statusIndicator={statusIndicator}
+          size={boxSize}
         />
       );
     }
@@ -122,6 +126,7 @@ export function ConditionsGrid({
           formatTime={formatSunTime!}
           use24h={use24h}
           onPress={() => onMetricPress("sunriseSunset")}
+          size={boxSize}
         />
       );
     }
@@ -133,12 +138,14 @@ export function ConditionsGrid({
         shape={item.shape}
         onPress={onMetricPress}
         statusIndicator={statusIndicator}
+        size={boxSize}
       />
     );
   };
 
+  const gapClass = boxSize === "large" ? "gap-3" : "gap-2";
   return (
-    <View className="gap-2" style={{ width: "100%" }}>
+    <View className={gapClass} style={{ width: "100%" }}>
       <View className="flex-row items-center justify-between mb-0.5">
         <Text className="section-label">Conditions</Text>
         {droneWeightClassLabel ? (
@@ -148,11 +155,11 @@ export function ConditionsGrid({
           </View>
         ) : null}
       </View>
-      <View className="gap-2" style={{ width: "100%" }}>
+      <View className={gapClass} style={{ width: "100%" }}>
         {rows.map((row, rowIndex) => (
           <View
             key={rowIndex}
-            className="flex-row gap-2"
+            className={`flex-row ${gapClass}`}
             style={{ width: "100%", flexWrap: "nowrap" }}
           >
             {row.map((item, cellIndex) => {

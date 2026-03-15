@@ -29,4 +29,9 @@ export const CUBE_FLEX = 1;
 export const WIDE_FLEX = 2;
 export const ROW_UNITS = 3;
 
-export const BOX_HEIGHT = 72;
+export const BOX_HEIGHT = 80;
+/** Used for tablet (e.g. iPad) so condition boxes are larger; same layout. */
+export const BOX_HEIGHT_TABLET = 112;
+
+/** Width breakpoint (px) above which we use tablet layout (larger boxes). */
+export const TABLET_BREAKPOINT_WIDTH = 768;

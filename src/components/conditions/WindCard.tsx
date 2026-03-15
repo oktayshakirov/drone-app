@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useDeviceHeading } from "../../hooks/useDeviceHeading";
 import { useSettings } from "../../contexts/SettingsContext";
 import { StatusIndicatorDot } from "./StatusIndicatorDot";
-import { BOX_HEIGHT } from "./types";
+import { BOX_HEIGHT, BOX_HEIGHT_TABLET } from "./types";
 
 const ICON_COLOR = "#94a3b8";
 const STROKE_COLOR = "#94a3b8";
@@ -13,19 +13,19 @@ const STROKE_COLOR = "#94a3b8";
 const SIZES = {
   default: {
     compassSize: 72,
-    iconSize: 18,
+    iconSize: 20,
     compassViewWidth: 88,
-    cardinalFontSize: 10,
+    cardinalFontSize: 11,
     tickLength: 3,
     arrowLength: 16,
     arrowStemTop: 8,
     arrowStemWidth: 1.5,
     arrowHeadWidth: 5,
-    minHeight: 72,
+    minHeight: BOX_HEIGHT,
   },
   large: {
     compassSize: 112,
-    iconSize: 24,
+    iconSize: 26,
     compassViewWidth: 132,
     cardinalFontSize: 14,
     tickLength: 4,
@@ -33,7 +33,7 @@ const SIZES = {
     arrowStemTop: 12,
     arrowStemWidth: 2,
     arrowHeadWidth: 7,
-    minHeight: 100,
+    minHeight: BOX_HEIGHT_TABLET,
   },
 } as const;
 
@@ -112,20 +112,20 @@ export function WindCard({
       <View className="flex-1 min-w-0">
         <View className="flex-row items-center gap-1.5">
           <Ionicons name="leaf-outline" size={s.iconSize} color={ICON_COLOR} />
-          <Text className={size === "large" ? "section-label text-base" : "section-label"}>Wind</Text>
+          <Text className={size === "large" ? "section-label text-base" : "section-label text-xs"}>Wind</Text>
         </View>
-        <Text className={size === "large" ? "text-white font-semibold text-lg mt-0.5" : "text-white font-semibold text-sm mt-0.5"}>{windSpeed}</Text>
+        <Text className={size === "large" ? "text-white font-semibold text-lg mt-0.5" : "text-white font-semibold text-base mt-0.5"}>{windSpeed}</Text>
         <View className="flex-row items-center gap-1.5 mt-1">
           <Ionicons name="flag-outline" size={s.iconSize} color={ICON_COLOR} />
-          <Text className={size === "large" ? "section-label text-base" : "section-label"}>Gust</Text>
+          <Text className={size === "large" ? "section-label text-base" : "section-label text-xs"}>Gust</Text>
         </View>
-        <Text className={size === "large" ? "text-white font-semibold text-lg mt-0.5" : "text-white font-semibold text-sm mt-0.5"}>{windGust}</Text>
+        <Text className={size === "large" ? "text-white font-semibold text-lg mt-0.5" : "text-white font-semibold text-base mt-0.5"}>{windGust}</Text>
       </View>
       <View
         className="items-center justify-center"
         style={{ width: s.compassViewWidth }}
       >
-        <Text className={size === "large" ? "section-label text-xs mb-1" : "section-label text-[7px] mb-1"}>Direction</Text>
+        <Text className={size === "large" ? "section-label text-xs mb-1" : "section-label text-[9px] mb-1"}>Direction</Text>
         <Svg width={s.compassSize} height={s.compassSize} viewBox={`0 0 ${s.compassSize} ${s.compassSize}`}>
           <G transform={`rotate(${roseRotation} ${center} ${center})`}>
             {[45, 135, 225, 315].map((deg) => (

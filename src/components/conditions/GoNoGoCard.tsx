@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { SafetyStatus } from "../../types/weather";
-import { BOX_HEIGHT } from "./types";
+import { BOX_HEIGHT, BOX_HEIGHT_TABLET } from "./types";
 
 const STATUS_CONFIG: Record<
   SafetyStatus,
@@ -34,26 +34,29 @@ const STATUS_CONFIG: Record<
 export interface GoNoGoCardProps {
   status: SafetyStatus;
   onPress?: () => void;
+  /** Larger min height on tablet (same layout). */
+  size?: "default" | "large";
 }
 
 /**
  * Hero cube showing overall flight condition: Go (green), Caution (yellow), or No Go (red).
  * Replaces the drone image in the first hero slot when Go/No-Go is enabled.
  */
-export function GoNoGoCard({ status, onPress }: GoNoGoCardProps) {
+export function GoNoGoCard({ status, onPress, size = "default" }: GoNoGoCardProps) {
   const config = STATUS_CONFIG[status];
+  const minHeight = size === "large" ? BOX_HEIGHT_TABLET : BOX_HEIGHT;
   const content = (
     <View
       className={`condition-box flex-1 min-h-0 min-w-0 rounded-xl border border-border p-3 ${config.bg}`}
-      style={{ minHeight: BOX_HEIGHT }}
+      style={{ minHeight }}
     >
       <View className="flex-1 items-center justify-center">
         <Ionicons
           name={config.icon}
-          size={28}
+          size={size === "large" ? 38 : 32}
           color={config.iconColor}
         />
-        <Text className={`font-bold text-sm mt-1 ${config.text}`}>
+        <Text className={`font-bold mt-1 ${config.text} ${size === "large" ? "text-lg" : "text-base"}`}>
           {config.label}
         </Text>
       </View>

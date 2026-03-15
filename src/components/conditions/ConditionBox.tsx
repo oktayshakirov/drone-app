@@ -10,12 +10,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { getConditionIcon } from "../../constants/conditionIcons";
 import { StatusIndicatorDot } from "./StatusIndicatorDot";
 import type { ConditionBoxShape } from "./types";
-import { BOX_HEIGHT } from "./types";
+import { BOX_HEIGHT, BOX_HEIGHT_TABLET } from "./types";
 
 const ICON_COLOR = "#94a3b8";
 const SIZES = {
-  default: { iconCube: 22, iconWide: 20, weatherIcon: 32, minHeight: 72 },
-  large: { iconCube: 36, iconWide: 28, weatherIcon: 40, minHeight: 100 },
+  default: { iconCube: 26, iconWide: 24, weatherIcon: 36, minHeight: BOX_HEIGHT },
+  large: { iconCube: 38, iconWide: 30, weatherIcon: 42, minHeight: BOX_HEIGHT_TABLET },
 } as const;
 
 export interface ConditionBoxProps {
@@ -90,9 +90,9 @@ export function ConditionBox({
               color={ICON_COLOR}
             />
           </View>
-          <Text className={isLarge ? "section-label text-sm" : "section-label text-[10px]"}>{title}</Text>
+          <Text className={isLarge ? "section-label text-sm" : "section-label text-xs"}>{title}</Text>
           <Text
-            className={isLarge ? "text-white font-semibold mt-0.5 text-lg text-center" : "text-white font-semibold mt-0.5 text-sm text-center"}
+            className={isLarge ? "text-white font-semibold mt-0.5 text-lg text-center" : "text-white font-semibold mt-0.5 text-base text-center"}
             numberOfLines={2}
           >
             {value}
@@ -101,7 +101,7 @@ export function ConditionBox({
       ) : currentTemp != null && minTemp != null && maxTemp != null ? (
         <View className="flex-1 flex-row items-center justify-between gap-4">
           <View className="flex-row items-center gap-3 flex-1 min-w-0">
-            <View className={isLarge ? "w-14 h-14 rounded-xl bg-white/5 items-center justify-center flex-shrink-0" : "w-12 h-12 rounded-xl bg-white/5 items-center justify-center flex-shrink-0"}>
+            <View className={isLarge ? "w-14 h-14 rounded-xl bg-white/5 items-center justify-center flex-shrink-0" : "w-11 h-11 rounded-xl bg-white/5 items-center justify-center flex-shrink-0"}>
               <Ionicons
                 name={iconName}
                 size={s.weatherIcon}
@@ -109,11 +109,11 @@ export function ConditionBox({
               />
             </View>
             <View className="flex-1 min-w-0">
-              <Text className="text-slate-400 text-[10px] uppercase tracking-wider font-medium">
+              <Text className="text-slate-400 text-xs uppercase tracking-wider font-medium">
                 {title}
               </Text>
               <Text
-                className="text-white font-medium mt-0.5 text-sm"
+                className="text-white font-medium mt-0.5 text-base"
                 numberOfLines={1}
               >
                 {value}
@@ -133,7 +133,7 @@ export function ConditionBox({
       ) : (
         <View className="flex-1 flex-row items-center justify-between gap-3">
           <View className="flex-row items-center gap-3 flex-1 min-w-0">
-            <View className={isLarge ? "w-14 h-14 rounded-xl bg-surface/80 items-center justify-center flex-shrink-0" : "w-9 h-9 rounded-lg bg-surface/80 items-center justify-center flex-shrink-0"}>
+            <View className={isLarge ? "w-14 h-14 rounded-xl bg-surface/80 items-center justify-center flex-shrink-0" : "w-10 h-10 rounded-lg bg-surface/80 items-center justify-center flex-shrink-0"}>
               <Ionicons
                 name={iconName}
                 size={s.iconWide}
@@ -141,9 +141,9 @@ export function ConditionBox({
               />
             </View>
             <View className="flex-1 min-w-0">
-              <Text className={isLarge ? "section-label text-base" : "section-label"}>{title}</Text>
+              <Text className={isLarge ? "section-label text-base" : "section-label text-xs"}>{title}</Text>
               <Text
-                className={isLarge ? "text-white font-semibold mt-0.5 text-xl" : "text-white font-semibold mt-0.5 text-base"}
+                className={isLarge ? "text-white font-semibold mt-0.5 text-xl" : "text-white font-semibold mt-0.5 text-lg"}
                 numberOfLines={1}
               >
                 {value}

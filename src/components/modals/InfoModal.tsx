@@ -65,15 +65,15 @@ function ConditionRow({ item }: { item: ConditionBreakdownItem }) {
       <View className="flex-row items-center gap-2 flex-1 min-w-0">
         <Ionicons
           name={style.icon}
-          size={20}
+          size={22}
           color={item.status === "green" ? "#22c55e" : item.status === "yellow" ? "#eab308" : "#ef4444"}
         />
         <View className="flex-1 min-w-0">
-          <Text className="text-white font-medium">{item.label}</Text>
-          <Text className="text-slate-400 text-xs mt-0.5">{item.detail}</Text>
+          <Text className="text-white font-medium text-base">{item.label}</Text>
+          <Text className="text-slate-400 text-sm mt-0.5">{item.detail}</Text>
         </View>
       </View>
-      <Text className={`font-semibold text-sm ${style.text}`}>{item.value}</Text>
+      <Text className={`font-semibold text-base ${style.text}`}>{item.value}</Text>
     </View>
   );
 }
@@ -134,10 +134,10 @@ function ConditionStatusRow({ status }: { status: SafetyStatus }) {
   return (
     <View className={`flex-row items-center justify-between gap-2 py-2.5 px-3 rounded-lg ${style.bg} mb-4`}>
       <View className="flex-row items-center gap-2 flex-1 min-w-0">
-        <Ionicons name={style.icon} size={20} color={color} />
-        <Text className="text-white font-medium">Current status</Text>
+        <Ionicons name={style.icon} size={22} color={color} />
+        <Text className="text-white font-medium text-base">Current status</Text>
       </View>
-      <Text className={`font-semibold text-sm ${style.text}`}>{label}</Text>
+      <Text className={`font-semibold text-base ${style.text}`}>{label}</Text>
     </View>
   );
 }
@@ -298,10 +298,10 @@ export function InfoModal({
               {statusForMetric && (
                 <ConditionStatusRow status={statusForMetric} />
               )}
-              <Text className="text-white text-xl font-semibold">
+              <Text className="text-white text-2xl font-semibold">
                 {info.title}
               </Text>
-              <Text className="text-slate-300 mt-3 mb-4 leading-6">
+              <Text className="text-slate-300 text-base mt-3 mb-4 leading-7">
                 {info.body}
               </Text>
               {showForecast && hourlyForecast && formatWind && formatPercent && formatTemp && (
@@ -317,7 +317,7 @@ export function InfoModal({
               )}
               {showBreakdown && (
                 <View className="mt-2">
-                  <Text className="section-label mb-2">Current conditions</Text>
+                  <Text className="section-label text-base mb-2">Current conditions</Text>
                   {conditionBreakdown!.map((item) => (
                     <ConditionRow key={item.id} item={item} />
                   ))}
@@ -325,7 +325,7 @@ export function InfoModal({
               )}
             </ScrollView>
           ) : (
-            <Text className="text-slate-400 pb-6">
+            <Text className="text-slate-400 text-base pb-6">
               No details for this metric.
             </Text>
           )}

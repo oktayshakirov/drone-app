@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   title: {
-    fontSize: 14,
+    fontSize: 17,
     fontWeight: "500",
     color: TEXT_LABEL,
     marginBottom: 8,
@@ -88,25 +88,25 @@ const styles = StyleSheet.create({
   itemRow: {
     flex: 1,
     minWidth: 0,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
   },
   itemWrap: {
     flexBasis: "48%",
     flexGrow: 0,
     flexShrink: 0,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
   },
   label: {
-    fontSize: 12,
+    fontSize: 15,
     color: TEXT_LABEL,
   },
   value: {
-    fontSize: 14,
+    fontSize: 17,
     fontWeight: "500",
     color: TEXT_VALUE,
-    marginTop: 2,
+    marginTop: 4,
     textAlign: "center",
   },
 });

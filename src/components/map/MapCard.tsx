@@ -8,10 +8,10 @@ import {
 } from "react-native";
 import MapView from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
-import { BOX_HEIGHT } from "../conditions/types";
+import { BOX_HEIGHT, BOX_HEIGHT_TABLET } from "../conditions/types";
 
 const ICON_COLOR = "#94a3b8";
-const ICON_SIZE = 20;
+const ICON_SIZE = 22;
 const PREVIEW_WIDTH = 80;
 const PREVIEW_HEIGHT = 56;
 const PREVIEW_DELTA = 0.008;
@@ -20,24 +20,27 @@ export interface MapCardProps {
   onPress: () => void;
   latitude?: number;
   longitude?: number;
+  /** Larger min height on tablet (same layout). */
+  size?: "default" | "large";
 }
 
 /**
  * Wide grid card that opens the in-app map when pressed.
  * Shows a small map preview of the current location when coordinates are provided.
  */
-export function MapCard({ onPress, latitude, longitude }: MapCardProps) {
+export function MapCard({ onPress, latitude, longitude, size = "default" }: MapCardProps) {
   const hasCoords =
     latitude != null &&
     longitude != null &&
     (Platform.OS === "ios" || Platform.OS === "android");
+  const minHeight = size === "large" ? BOX_HEIGHT_TABLET : BOX_HEIGHT;
 
   return (
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={onPress}
       className="condition-box flex-1 min-h-0 min-w-0 rounded-xl border border-border bg-card p-3"
-      style={{ minHeight: BOX_HEIGHT }}
+      style={{ minHeight }}
     >
       <View className="flex-1 flex-row items-center justify-between gap-3">
         <View className="flex-row items-center gap-3 flex-1 min-w-0">
@@ -68,15 +71,15 @@ export function MapCard({ onPress, latitude, longitude }: MapCardProps) {
             )}
           </View>
           <View className="flex-1 min-w-0">
-            <Text className="section-label">No Fly Zone Map</Text>
-            <Text className="text-white font-semibold mt-0.5 text-base">
+            <Text className="section-label text-xs">No Fly Zone Map</Text>
+            <Text className="text-white font-semibold mt-0.5 text-lg">
               View map
             </Text>
           </View>
         </View>
         <Ionicons
           name="chevron-forward"
-          size={20}
+          size={22}
           color={ICON_COLOR}
           style={{ flexShrink: 0 }}
         />
