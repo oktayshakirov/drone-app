@@ -156,7 +156,7 @@ export function OnboardingScreen() {
                   ]}
                 />
                 <Text style={styles.statusLabel}>Caution</Text>
-                <Text style={styles.statusSublabel}>Check conditions</Text>
+                <Text style={styles.statusSublabel}>Check first</Text>
               </View>
               <View style={styles.statusIndicatorItem}>
                 <View
@@ -166,7 +166,7 @@ export function OnboardingScreen() {
                   ]}
                 />
                 <Text style={styles.statusLabel}>No go</Text>
-                <Text style={styles.statusSublabel}>Stay grounded</Text>
+                <Text style={styles.statusSublabel}>Do not fly</Text>
               </View>
             </View>
           )}

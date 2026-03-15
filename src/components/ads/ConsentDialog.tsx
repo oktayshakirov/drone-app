@@ -27,32 +27,50 @@ export function ConsentDialog({ onConsentCompleted }: ConsentDialogProps) {
   const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
-    if (Platform.OS !== "android") {
-      onConsentCompleted();
+    if (Platform.OS === "android") {
+      AsyncStorage.getItem(TRACKING_CONSENT_KEY).then((storedConsent) => {
+        if (storedConsent === null) {
+          setModalVisible(true);
+        } else {
+          onConsentCompleted();
+        }
+      });
       return;
     }
-    AsyncStorage.getItem(TRACKING_CONSENT_KEY).then((storedConsent) => {
-      if (storedConsent === null) {
-        setModalVisible(true);
-      } else {
+    // iOS: use native ATT consent only; do not show custom dialog.
+    if (Platform.OS === "ios" && Constants.appOwnership !== "expo") {
+      (async () => {
+        try {
+          const {
+            getTrackingPermissionsAsync,
+            requestTrackingPermissionsAsync,
+          } = await import("expo-tracking-transparency");
+          const { status } = await getTrackingPermissionsAsync();
+          if (status === "undetermined") {
+            const { status: newStatus } = await requestTrackingPermissionsAsync();
+            await AsyncStorage.setItem(
+              TRACKING_CONSENT_KEY,
+              newStatus === "granted" ? "granted" : "denied"
+            );
+          } else {
+            await AsyncStorage.setItem(
+              TRACKING_CONSENT_KEY,
+              status === "granted" ? "granted" : "denied"
+            );
+          }
+        } catch {
+          // Module or ATT unavailable; proceed without storing.
+        }
         onConsentCompleted();
-      }
-    });
+      })();
+    } else {
+      onConsentCompleted();
+    }
   }, [onConsentCompleted]);
 
   const handleAllow = async () => {
     await AsyncStorage.setItem(TRACKING_CONSENT_KEY, "granted");
     setModalVisible(false);
-    if (Platform.OS === "ios" && Constants.appOwnership !== "expo") {
-      try {
-        const { requestTrackingPermissionsAsync } = await import(
-          "expo-tracking-transparency"
-        );
-        await requestTrackingPermissionsAsync();
-      } catch {
-        // Ignore if ATT fails.
-      }
-    }
     onConsentCompleted();
   };
 
