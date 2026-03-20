@@ -4,6 +4,34 @@ apply plugin: "com.facebook.react"
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
+/** Load KEY=value pairs from repo-root `.env` (same vars as app.config.js + dotenv). */
+def readDotEnv(File envFile) {
+    def map = [:]
+    if (!envFile.exists()) return map
+    envFile.eachLine { line ->
+        line = line.trim()
+        if (line.isEmpty() || line.startsWith("#")) return
+        def eq = line.indexOf("=")
+        if (eq < 0) return
+        def key = line.substring(0, eq).trim()
+        def value = line.substring(eq + 1).trim()
+        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+            value = value.substring(1, value.length() - 1)
+        }
+        map[key] = value
+    }
+    return map
+}
+
+def repoRoot = rootProject.projectDir.parentFile
+def dotEnv = readDotEnv(new File(repoRoot, ".env"))
+def googleMapsAndroidKey =
+        dotEnv.get("EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY")
+                ?: dotEnv.get("GOOGLE_MAPS_ANDROID_API_KEY")
+                ?: System.getenv("EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY")
+                ?: System.getenv("GOOGLE_MAPS_ANDROID_API_KEY")
+                ?: ""
+
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.
@@ -96,6 +124,7 @@ android {
         versionName "1.0.0"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
+        manifestPlaceholders = [GOOGLE_MAPS_ANDROID_API_KEY: googleMapsAndroidKey]
     }
     signingConfigs {
         debug {
