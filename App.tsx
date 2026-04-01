@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import Constants from "expo-constants";
+import { useNetInfo } from "@react-native-community/netinfo";
 import {
   ConditionsGrid,
   type GridItem,
@@ -110,6 +111,116 @@ function AppWithOnboarding() {
 const LAST_FREE_REFRESH_KEY = "dronepal_lastFreeRefresh";
 const FREE_REFRESH_INTERVAL_MS = 12 * 60 * 60 * 1000;
 
+function SkeletonBlock({
+  height,
+  width = "100%",
+  borderRadius = 12,
+}: {
+  height: number;
+  width?: number | `${number}%`;
+  borderRadius?: number;
+}) {
+  return (
+    <View
+      style={{
+        height,
+        width,
+        borderRadius,
+        backgroundColor: "#2b2b2b",
+        borderWidth: 1,
+        borderColor: "#3b3b3b",
+      }}
+    />
+  );
+}
+
+function OfflineScreen({ onRetry }: { onRetry: () => void }) {
+  return (
+    <SafeAreaProvider>
+      <View style={styles.background}>
+        <SafeAreaView className="flex-1 items-center justify-center px-6">
+          <StatusBar style="light" />
+          <Ionicons name="cloud-offline-outline" size={56} color="#94a3b8" />
+          <Text className="text-slate-200 text-xl font-semibold mt-5 text-center">
+            You are offline
+          </Text>
+          <Text className="text-slate-400 text-sm mt-2 text-center">
+            Connect to the internet to load live weather and map data.
+          </Text>
+          <Pressable
+            onPress={onRetry}
+            className="mt-6 px-5 py-3 rounded-xl bg-slate-700 active:opacity-80"
+          >
+            <Text className="text-slate-100 font-semibold">Try again</Text>
+          </Pressable>
+        </SafeAreaView>
+      </View>
+    </SafeAreaProvider>
+  );
+}
+
+function AppContentSkeleton() {
+  return (
+    <SafeAreaProvider>
+      <View style={styles.background}>
+        <SafeAreaView className="flex-1" style={styles.safeArea} edges={["top"]}>
+          <StatusBar style="light" />
+          <ScrollView
+            className="flex-1"
+            contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+            showsVerticalScrollIndicator={false}
+          >
+            <View className="mb-3 py-1.5 flex-row items-center justify-between gap-3">
+              <SkeletonBlock height={20} width="72%" borderRadius={8} />
+              <SkeletonBlock height={28} width={28} borderRadius={14} />
+              <SkeletonBlock height={27} width={27} borderRadius={8} />
+            </View>
+
+            <View className="flex-row gap-2 mb-4" style={{ width: "100%" }}>
+              <View style={{ flexGrow: CUBE_FLEX, flexShrink: 1, flexBasis: 0 }}>
+                <SkeletonBlock height={140} borderRadius={16} />
+              </View>
+              <View style={{ flexGrow: WIDE_FLEX, flexShrink: 1, flexBasis: 0 }}>
+                <SkeletonBlock height={140} borderRadius={16} />
+              </View>
+            </View>
+
+            <View className="mt-4 gap-2">
+              <View className="flex-row gap-2">
+                <View style={{ flex: CUBE_FLEX }}>
+                  <SkeletonBlock height={120} borderRadius={16} />
+                </View>
+                <View style={{ flex: WIDE_FLEX }}>
+                  <SkeletonBlock height={120} borderRadius={16} />
+                </View>
+              </View>
+              <View className="flex-row gap-2">
+                <View style={{ flex: WIDE_FLEX }}>
+                  <SkeletonBlock height={120} borderRadius={16} />
+                </View>
+                <View style={{ flex: CUBE_FLEX }}>
+                  <SkeletonBlock height={120} borderRadius={16} />
+                </View>
+              </View>
+              <View className="flex-row gap-2">
+                <View style={{ flex: 1 }}>
+                  <SkeletonBlock height={110} borderRadius={16} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <SkeletonBlock height={110} borderRadius={16} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <SkeletonBlock height={110} borderRadius={16} />
+                </View>
+              </View>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </View>
+    </SafeAreaProvider>
+  );
+}
+
 function AppContent() {
   const [infoMetric, setInfoMetric] = useState<string | null>(null);
   const [locationPickerVisible, setLocationPickerVisible] = useState(false);
@@ -160,6 +271,9 @@ function AppContent() {
     isAvailable: revenueCatAvailable,
     restore,
   } = useRevenueCat();
+  const netInfo = useNetInfo();
+  const isOffline =
+    netInfo.isConnected === false || netInfo.isInternetReachable === false;
 
   const proPlanLabel = useMemo(() => {
     if (reviewerPro?.isReviewerPro) return "Reviewer 24h";
@@ -388,19 +502,15 @@ function AppContent() {
   const loading = locationLoading || weatherLoading;
   const error = locationError ?? weatherError;
 
-  if (loading && !weather) {
-    return (
-      <SafeAreaProvider>
-        <View style={styles.background}>
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color="#22c55e" />
-            <Text className="text-slate-400 mt-4">Loading weather…</Text>
-            <StatusBar style="light" />
-          </View>
-        </View>
-      </SafeAreaProvider>
-    );
+  if (isOffline && !weather) {
+    return <OfflineScreen onRetry={refetchWeather} />;
   }
+
+  if (loading && !weather) {
+    return <AppContentSkeleton />;
+  }
+
+  const showOfflineBanner = isOffline && Boolean(weather);
 
   return (
     <SafeAreaProvider>
@@ -424,6 +534,13 @@ function AppContent() {
                 />
               }
             >
+              {showOfflineBanner && (
+                <View className="mb-3 p-3 rounded-lg bg-slate-700/40 border border-slate-600/60">
+                  <Text className="text-slate-200 text-xs">
+                    You are offline. Showing last loaded data.
+                  </Text>
+                </View>
+              )}
               {coords && (
                 <View className="flex-row items-center justify-between mb-3 py-1.5">
                   <Pressable
@@ -620,7 +737,6 @@ function AppContent() {
               />
             )}
           </View>
-
           <InfoModal
             visible={infoMetric != null}
             metricKey={infoMetric}

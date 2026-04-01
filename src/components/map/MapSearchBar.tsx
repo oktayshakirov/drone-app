@@ -44,6 +44,9 @@ export function MapSearchBar({
           onChangeText={onSearchQueryChange}
           autoFocus
           returnKeyType="search"
+          accessibilityLabel="Search place or address"
+          autoCorrect={false}
+          autoCapitalize="none"
         />
         {searching && <ActivityIndicator size="small" color="#94a3b8" />}
       </View>
@@ -52,10 +55,13 @@ export function MapSearchBar({
           <FlatList
             data={searchResults}
             keyExtractor={keyExtractor}
+            keyboardDismissMode="on-drag"
             renderItem={({ item }) => (
               <Pressable
                 style={styles.searchResultItem}
                 onPress={() => onSelectResult(item)}
+                accessibilityRole="button"
+                accessibilityLabel={item.display_name}
               >
                 <Text style={styles.searchResultText} numberOfLines={2}>
                   {item.display_name}

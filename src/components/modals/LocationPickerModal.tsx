@@ -9,7 +9,10 @@ import {
   ActivityIndicator,
   FlatList,
   Keyboard,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
@@ -41,6 +44,7 @@ export function LocationPickerModal({
   onUseCurrent,
   currentPlaceName,
 }: LocationPickerModalProps) {
+  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -111,24 +115,30 @@ export function LocationPickerModal({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <Pressable className="flex-1 bg-black/60 justify-end" onPress={onClose}>
-        <Pressable
-          className="bg-card border-t border-border rounded-t-3xl max-h-[80%]"
-          onPress={(e) => e.stopPropagation()}
-        >
-          <View className="w-12 h-1 bg-slate-600 rounded-full self-center mt-3 mb-2" />
-          <View className="px-4 pb-6">
-            <Text className="section-label mb-2">Choose location</Text>
-            <TextInput
-              className="bg-surface border border-border rounded-xl px-4 py-3 text-white text-base mb-3"
-              placeholder="Search city or address..."
-              placeholderTextColor="#64748b"
-              value={query}
-              onChangeText={setQuery}
-              autoCapitalize="none"
-              autoCorrect={false}
-              clearButtonMode="while-editing"
-            />
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <Pressable className="flex-1 bg-black/60 justify-start" onPress={onClose}>
+          <Pressable
+            className="bg-card border-b border-border rounded-b-3xl max-h-[88%] w-full"
+            style={{ paddingTop: Math.max(insets.top, 12) }}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View className="w-12 h-1 bg-slate-600 rounded-full self-center mb-3" />
+            <View className="px-4 pb-6">
+              <Text className="section-label mb-2">Choose location</Text>
+              <TextInput
+                className="bg-surface border border-border rounded-xl px-4 py-3 text-white text-base mb-3"
+                placeholder="Search city or address..."
+                placeholderTextColor="#64748b"
+                value={query}
+                onChangeText={setQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
+                clearButtonMode="while-editing"
+              />
             {searching && (
               <View className="py-4 items-center">
                 <ActivityIndicator size="small" color="#94a3b8" />
@@ -191,6 +201,7 @@ export function LocationPickerModal({
           </View>
         </Pressable>
       </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

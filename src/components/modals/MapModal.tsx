@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-  useMemo,
-} from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   Modal,
   View,
@@ -14,36 +8,28 @@ import {
   StyleSheet,
   Keyboard,
   ActivityIndicator,
+  Switch,
 } from "react-native";
 import {
   SafeAreaProvider,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import MapView from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  fetchAirportsInRadius,
-  type Airport,
-  type AirportType,
-} from "../../api/airports";
 import { useSettings } from "../../contexts/SettingsContext";
 import {
-  AIRPORT_TYPE_COLORS,
-  getAirportTypeLabel,
+  MAP_AIRPORT_LEGEND_ENTRIES,
+  airportTypeToLegendKey,
+  defaultAirportLegendVisibility,
+  type MapAirportLegendKey,
 } from "../../constants/airportColors";
 import type { MapType } from "../../types/settings";
 import {
   MapSearchBar,
   NoFlyZoneMapView,
-  mergeAirports,
-  distanceKm,
+  isValidMapCoordinate,
   NOMINATIM_URL,
   SEARCH_DEBOUNCE_MS,
-  DEFAULT_LATITUDE_DELTA,
-  DEFAULT_LONGITUDE_DELTA,
-  AIRPORT_FETCH_RADIUS_KM,
-  AIRPORT_FETCH_MIN_MOVE_KM,
-  AIRPORT_FETCH_THROTTLE_MS,
+  useMapViewportAirports,
   type SearchResult,
 } from "../map";
 
@@ -58,14 +44,13 @@ const MAP_TYPE_OPTIONS: { value: MapType; label: string }[] = [
   { value: "hybrid", label: "Satellite" },
 ];
 
-const AIRPORT_TYPES_LEGEND = Object.keys(AIRPORT_TYPE_COLORS) as AirportType[];
+const FALLBACK_USER_COORD = { lat: 20, lng: 0 };
 
 interface MapModalProps {
   visible: boolean;
   onClose: () => void;
   latitude: number;
   longitude: number;
-  /** When false and search is tapped, show paywall instead of opening search. */
   isPro?: boolean;
   showPaywall?: () => Promise<void>;
   revenueCatAvailable?: boolean;
@@ -86,6 +71,7 @@ export function MapModal({
       animationType="slide"
       presentationStyle="fullScreen"
       onRequestClose={onClose}
+      statusBarTranslucent={Platform.OS === "android"}
     >
       <SafeAreaProvider>
         <View style={styles.background}>
@@ -119,41 +105,53 @@ function MapModalContent({
   const topInset = insets.top > 0 ? insets.top : FALLBACK_TOP_INSET;
   const bottomInset = insets.bottom > 0 ? insets.bottom : 0;
 
-  const mapRef = useRef<React.ComponentRef<typeof MapView> | null>(null);
-  const airportFetchAbortRef = useRef<AbortController | null>(null);
-  const lastFetchedCenterRef = useRef<{ lat: number; lng: number } | null>(
-    null,
-  );
-  const lastFetchedAtRef = useRef<number>(0);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchAbortRef = useRef<AbortController | null>(null);
 
-  const [airports, setAirports] = useState<Airport[]>([]);
-  const [airportsLoading, setAirportsLoading] = useState(false);
   const [mapTypeMenuVisible, setMapTypeMenuVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
 
+  const userLatResolved = isValidMapCoordinate(latitude, longitude)
+    ? latitude
+    : FALLBACK_USER_COORD.lat;
+  const userLngResolved = isValidMapCoordinate(latitude, longitude)
+    ? longitude
+    : FALLBACK_USER_COORD.lng;
+
   const mapType = settings.mapType;
 
-  const centerRegion = useCallback((lat: number, lng: number) => {
-    const region = {
-      latitude: lat,
-      longitude: lng,
-      latitudeDelta: DEFAULT_LATITUDE_DELTA,
-      longitudeDelta: DEFAULT_LONGITUDE_DELTA,
-    };
-    const map = mapRef.current as {
-      animateToRegion?: (r: typeof region, d?: number) => void;
-    } | null;
-    map?.animateToRegion?.(region, 350);
-  }, []);
+  const {
+    airports,
+    airportsLoading,
+    idleCountdownSeconds,
+    mapViewCenter,
+    mapRef,
+    centerOnRegion,
+    requestAirportsForUser,
+    onRegionChangeStart,
+    onRegionChangeComplete,
+    initialRegion,
+  } = useMapViewportAirports({
+    visible,
+    isNative,
+    userLat: userLatResolved,
+    userLng: userLngResolved,
+  });
 
-  const handleCenterLocation = useCallback(() => {
-    centerRegion(latitude, longitude);
-  }, [latitude, longitude, centerRegion]);
+  const [airportTypesSheetVisible, setAirportTypesSheetVisible] = useState(false);
+  const [airportLegendVisibility, setAirportLegendVisibility] = useState<
+    Record<MapAirportLegendKey, boolean>
+  >(() => defaultAirportLegendVisibility());
+
+  const airportsForMap = useMemo(() => {
+    return airports.filter((a) => {
+      const key = airportTypeToLegendKey(a.type);
+      return airportLegendVisibility[key] !== false;
+    });
+  }, [airports, airportLegendVisibility]);
 
   const runSearch = useCallback(async (q: string) => {
     const trimmed = q.trim();
@@ -202,97 +200,47 @@ function MapModalContent({
     };
   }, [searchQuery, runSearch]);
 
-  const fetchAirportsForCenter = useCallback((lat: number, lng: number) => {
-    airportFetchAbortRef.current?.abort();
-    const controller = new AbortController();
-    airportFetchAbortRef.current = controller;
-    setAirportsLoading(true);
-    fetchAirportsInRadius(lat, lng, AIRPORT_FETCH_RADIUS_KM, controller.signal)
-      .then((list) => {
-        setAirports((prev) => mergeAirports(prev, list, lat, lng));
-        lastFetchedCenterRef.current = { lat, lng };
-        lastFetchedAtRef.current = Date.now();
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (airportFetchAbortRef.current === controller) {
-          setAirportsLoading(false);
-        }
-      });
-  }, []);
+  useEffect(() => {
+    if (!visible) {
+      searchAbortRef.current?.abort();
+      searchAbortRef.current = null;
+      setSearchVisible(false);
+      setSearchQuery("");
+      setSearchResults([]);
+      setSearching(false);
+      setMapTypeMenuVisible(false);
+      setAirportTypesSheetVisible(false);
+      setAirportLegendVisibility(defaultAirportLegendVisibility());
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = null;
+    }
+  }, [visible]);
+
+  const handleCenterLocation = useCallback(() => {
+    if (!isValidMapCoordinate(latitude, longitude)) return;
+    centerOnRegion(latitude, longitude);
+    requestAirportsForUser(latitude, longitude);
+  }, [latitude, longitude, centerOnRegion, requestAirportsForUser]);
 
   const onSelectSearchResult = useCallback(
     (item: SearchResult) => {
       const lat = parseFloat(item.lat);
       const lon = parseFloat(item.lon);
       if (Number.isFinite(lat) && Number.isFinite(lon)) {
-        centerRegion(lat, lon);
+        centerOnRegion(lat, lon);
         setSearchVisible(false);
         setSearchQuery("");
         setSearchResults([]);
         Keyboard.dismiss();
-        fetchAirportsForCenter(lat, lon);
+        requestAirportsForUser(lat, lon);
       }
     },
-    [centerRegion, fetchAirportsForCenter],
+    [centerOnRegion, requestAirportsForUser],
   );
 
   const searchResultKeyExtractor = useCallback(
     (item: SearchResult) => `${item.lat}-${item.lon}-${item.display_name}`,
     [],
-  );
-
-  useEffect(() => {
-    if (!visible) {
-      airportFetchAbortRef.current?.abort();
-      airportFetchAbortRef.current = null;
-      searchAbortRef.current?.abort();
-      searchAbortRef.current = null;
-      lastFetchedCenterRef.current = null;
-      lastFetchedAtRef.current = 0;
-      setAirports([]);
-      setAirportsLoading(false);
-      setSearchVisible(false);
-      setSearchQuery("");
-      setSearchResults([]);
-      setSearching(false);
-      setMapTypeMenuVisible(false);
-      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-      searchDebounceRef.current = null;
-      return;
-    }
-    if (!isNative) return;
-    lastFetchedCenterRef.current = null;
-    lastFetchedAtRef.current = 0;
-    fetchAirportsForCenter(latitude, longitude);
-  }, [visible, latitude, longitude, isNative, fetchAirportsForCenter]);
-
-  const onRegionChangeComplete = useCallback(
-    (region: { latitude: number; longitude: number }) => {
-      if (!isNative) return;
-      const now = Date.now();
-      const last = lastFetchedCenterRef.current;
-      const lastTime = lastFetchedAtRef.current;
-      if (now - lastTime < AIRPORT_FETCH_THROTTLE_MS) return;
-      if (
-        last != null &&
-        distanceKm(region.latitude, region.longitude, last.lat, last.lng) <
-          AIRPORT_FETCH_MIN_MOVE_KM
-      )
-        return;
-      fetchAirportsForCenter(region.latitude, region.longitude);
-    },
-    [isNative, fetchAirportsForCenter],
-  );
-
-  const initialRegion = useMemo(
-    () => ({
-      latitude,
-      longitude,
-      latitudeDelta: DEFAULT_LATITUDE_DELTA,
-      longitudeDelta: DEFAULT_LONGITUDE_DELTA,
-    }),
-    [latitude, longitude],
   );
 
   return (
@@ -302,13 +250,14 @@ function MapModalContent({
         { paddingTop: topInset, paddingBottom: bottomInset },
       ]}
     >
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>No Fly Zone Map</Text>
         <Pressable
           onPress={onClose}
           style={styles.closeButton}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityRole="button"
+          accessibilityLabel="Close map"
         >
           <Ionicons name="close" size={24} color="#94a3b8" />
         </Pressable>
@@ -324,46 +273,143 @@ function MapModalContent({
         keyExtractor={searchResultKeyExtractor}
       />
 
-      {/* Loading bar */}
-      {airportsLoading && (
-        <View style={styles.loadingBar}>
+      {(idleCountdownSeconds != null || airportsLoading) && (
+        <View
+          style={styles.loadingBar}
+          accessibilityLiveRegion="polite"
+          accessibilityRole="progressbar"
+          accessibilityLabel={
+            airportsLoading
+              ? "Loading airports"
+              : idleCountdownSeconds != null
+                ? `Stay still, ${idleCountdownSeconds} seconds to load airports`
+                : undefined
+          }
+        >
           <ActivityIndicator size="small" color="#94a3b8" />
-          <Text style={styles.loadingText}>Loading airports…</Text>
+          <Text style={styles.loadingText}>
+            {airportsLoading
+              ? "Loading airports…"
+              : idleCountdownSeconds != null
+                ? `Stay still — ${idleCountdownSeconds}s to load airports`
+                : ""}
+          </Text>
         </View>
       )}
 
       {isNative ? (
         <View style={styles.mapWrapper}>
           <NoFlyZoneMapView
-            latitude={latitude}
-            longitude={longitude}
-            airports={airports}
+            latitude={userLatResolved}
+            longitude={userLngResolved}
+            viewCenterLat={mapViewCenter.lat}
+            viewCenterLng={mapViewCenter.lng}
+            airports={airportsForMap}
             mapRef={mapRef}
             initialRegion={initialRegion}
+            onRegionChangeStart={onRegionChangeStart}
             onRegionChangeComplete={onRegionChangeComplete}
             mapType={mapType}
           />
 
-          {/* Legend */}
-          <View style={styles.legend}>
-            {AIRPORT_TYPES_LEGEND.map((type) => (
-              <View key={type} style={styles.legendRow}>
+          {mapTypeMenuVisible && (
+            <Pressable
+              style={styles.mapTypeMenuBackdrop}
+              onPress={() => setMapTypeMenuVisible(false)}
+              accessibilityLabel="Dismiss map type menu"
+              accessibilityRole="button"
+            />
+          )}
+
+          <Pressable
+            style={styles.legend}
+            onPress={() => {
+              setMapTypeMenuVisible(false);
+              setAirportTypesSheetVisible(true);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Airport types: show or hide on map"
+          >
+            {MAP_AIRPORT_LEGEND_ENTRIES.map((entry) => (
+              <View
+                key={entry.key}
+                style={[
+                  styles.legendRow,
+                  !airportLegendVisibility[entry.key] && styles.legendRowDimmed,
+                ]}
+              >
                 <View
                   style={[
                     styles.legendDot,
-                    { backgroundColor: AIRPORT_TYPE_COLORS[type] },
+                    { backgroundColor: entry.color },
                   ]}
                 />
-                <Text style={styles.legendLabel}>
-                  {getAirportTypeLabel(type)}
-                </Text>
+                <Text style={styles.legendLabel}>{entry.label}</Text>
               </View>
             ))}
-          </View>
+          </Pressable>
 
-          {/* Map type menu */}
+          <Modal
+            visible={airportTypesSheetVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setAirportTypesSheetVisible(false)}
+            statusBarTranslucent={Platform.OS === "android"}
+          >
+            <View style={styles.airportTypesOverlay}>
+              <Pressable
+                style={styles.airportTypesBackdrop}
+                onPress={() => setAirportTypesSheetVisible(false)}
+                accessibilityLabel="Dismiss airport types"
+                accessibilityRole="button"
+              />
+              <View style={styles.airportTypesCard} accessibilityViewIsModal>
+                <Text style={styles.airportTypesTitle}>Airports on map</Text>
+                <Text style={styles.airportTypesSubtitle}>
+                  Turn types off to hide them on the map.
+                </Text>
+                {MAP_AIRPORT_LEGEND_ENTRIES.map((entry) => (
+                  <View key={entry.key} style={styles.airportTypesRow}>
+                    <View style={styles.airportTypesRowLeft}>
+                      <View
+                        style={[
+                          styles.legendDot,
+                          { backgroundColor: entry.color },
+                        ]}
+                      />
+                      <Text style={styles.airportTypesRowLabel}>{entry.label}</Text>
+                    </View>
+                    <Switch
+                      value={airportLegendVisibility[entry.key]}
+                      onValueChange={(on) =>
+                        setAirportLegendVisibility((prev) => ({
+                          ...prev,
+                          [entry.key]: on,
+                        }))
+                      }
+                      trackColor={{ false: "#334155", true: "#475569" }}
+                      thumbColor={
+                        airportLegendVisibility[entry.key] ? "#e2e8f0" : "#64748b"
+                      }
+                      ios_backgroundColor="#334155"
+                      accessibilityLabel={`Show ${entry.label}`}
+                    />
+                  </View>
+                ))}
+                <Pressable
+                  style={styles.airportTypesDoneButton}
+                  onPress={() => setAirportTypesSheetVisible(false)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Done"
+                >
+                  <Text style={styles.airportTypesDoneText}>Done</Text>
+                </Pressable>
+              </View>
+            </View>
+          </Modal>
+
           {mapTypeMenuVisible && (
-            <View style={styles.mapTypeMenu}>
+            <View style={styles.mapTypeMenu} pointerEvents="box-none">
               {MAP_TYPE_OPTIONS.map((opt) => (
                 <Pressable
                   key={opt.value}
@@ -375,6 +421,9 @@ function MapModalContent({
                     setMapType(opt.value);
                     setMapTypeMenuVisible(false);
                   }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${opt.label} map style`}
+                  accessibilityState={{ selected: mapType === opt.value }}
                 >
                   <Text
                     style={[
@@ -389,11 +438,13 @@ function MapModalContent({
             </View>
           )}
 
-          {/* Control buttons */}
           <View style={styles.mapButtons}>
             <Pressable
               onPress={() => setMapTypeMenuVisible((v) => !v)}
               style={styles.mapButton}
+              accessibilityRole="button"
+              accessibilityLabel="Map type"
+              accessibilityState={{ expanded: mapTypeMenuVisible }}
             >
               <Ionicons
                 name="layers"
@@ -410,6 +461,9 @@ function MapModalContent({
                 }
               }}
               style={styles.mapButton}
+              accessibilityRole="button"
+              accessibilityLabel="Search place"
+              accessibilityState={{ expanded: searchVisible }}
             >
               <Ionicons
                 name="search"
@@ -417,7 +471,12 @@ function MapModalContent({
                 color={searchVisible ? "#cbd5e1" : "#94a3b8"}
               />
             </Pressable>
-            <Pressable onPress={handleCenterLocation} style={styles.mapButton}>
+            <Pressable
+              onPress={handleCenterLocation}
+              style={styles.mapButton}
+              accessibilityRole="button"
+              accessibilityLabel="Center on my location"
+            >
               <Ionicons name="locate" size={22} color="#94a3b8" />
             </Pressable>
           </View>
@@ -466,10 +525,16 @@ const styles = StyleSheet.create({
     color: "#94a3b8",
   },
   mapWrapper: { flex: 1, position: "relative" },
+  mapTypeMenuBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "transparent",
+    zIndex: 5,
+  },
   legend: {
     position: "absolute",
     top: 12,
     right: 12,
+    zIndex: 10,
     flexDirection: "column",
     gap: 6,
     paddingVertical: 8,
@@ -493,10 +558,77 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#94a3b8",
   },
+  legendRowDimmed: {
+    opacity: 0.4,
+  },
+  airportTypesOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 20,
+  },
+  airportTypesBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.55)",
+  },
+  airportTypesCard: {
+    backgroundColor: "#1e293b",
+    borderRadius: 14,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: "rgba(148,163,184,0.35)",
+    maxWidth: 400,
+    width: "100%",
+    alignSelf: "center",
+    zIndex: 1,
+    elevation: 8,
+  },
+  airportTypesTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#f8fafc",
+    marginBottom: 6,
+  },
+  airportTypesSubtitle: {
+    fontSize: 13,
+    color: "#94a3b8",
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  airportTypesRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(148,163,184,0.25)",
+  },
+  airportTypesRowLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1,
+    marginRight: 12,
+  },
+  airportTypesRowLabel: {
+    fontSize: 15,
+    color: "#e2e8f0",
+    flex: 1,
+  },
+  airportTypesDoneButton: {
+    marginTop: 18,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  airportTypesDoneText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#94a3b8",
+  },
   mapTypeMenu: {
     position: "absolute",
     bottom: 160,
     right: 12,
+    zIndex: 15,
     paddingVertical: 6,
     paddingHorizontal: 4,
     backgroundColor: "rgba(0,0,0,0.85)",
@@ -525,6 +657,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 16,
     right: 12,
+    zIndex: 10,
     flexDirection: "column",
     gap: 8,
   },

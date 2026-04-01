@@ -75,6 +75,51 @@ interface RawDayForecast {
   sun?: { sunrise?: string; sunset?: string };
 }
 
+/** Minute-by-minute "next hour" precip (REST: `forecastNextHour`). */
+interface RawForecastNextHour {
+  minutes?: { precipitationChance?: number }[];
+  summary?: { precipitationChance?: number }[];
+}
+
+function normalizeChanceToPercent(
+  value: number | null | undefined,
+): number | null {
+  if (value == null || Number.isNaN(value)) return null;
+  const percent = value <= 1 ? value * 100 : value;
+  return Math.max(0, Math.min(100, percent));
+}
+
+/**
+ * Max precip probability across next-hour minutes/summaries (more granular than hourly buckets).
+ * Values from WeatherKit are 0–1.
+ */
+function maxPrecipChanceFromNextHour(
+  raw: RawForecastNextHour | undefined | null,
+): number | null {
+  if (!raw) return null;
+  const parts: number[] = [];
+  for (const m of raw.minutes ?? []) {
+    const p = normalizeChanceToPercent(m.precipitationChance);
+    if (p != null) parts.push(p);
+  }
+  for (const s of raw.summary ?? []) {
+    const p = normalizeChanceToPercent(s.precipitationChance);
+    if (p != null) parts.push(p);
+  }
+  if (parts.length === 0) return null;
+  return Math.max(...parts);
+}
+
+function mergeMaxPercents(
+  ...values: (number | null | undefined)[]
+): number | null {
+  const nums = values.filter(
+    (v): v is number => v != null && !Number.isNaN(v),
+  );
+  if (nums.length === 0) return null;
+  return Math.max(...nums);
+}
+
 function mapWind(raw: RawCurrentWeather): WindConditions {
   const speedKmh = raw.windSpeed ?? 0;
   const gustKmh = raw.windGust;
@@ -90,17 +135,17 @@ function mapCurrent(raw: RawCurrentWeather): CurrentWeatherSummary {
     conditionCode: raw.conditionCode ?? null,
     wind: mapWind(raw),
     visibilityMeters: raw.visibility ?? null,
-    cloudCoverPercent: raw.cloudCover ?? null,
+    cloudCoverPercent: normalizeChanceToPercent(raw.cloudCover),
     temperatureCelsius: raw.temperature ?? null,
-    humidityPercent: raw.humidity ?? null,
-    dewPointCelsius: null, // Add if WeatherKit provides it
+    humidityPercent: normalizeChanceToPercent(raw.humidity),
+    dewPointCelsius: null,
     pressureHpa: raw.pressure ?? null,
     uvIndex: raw.uvIndex ?? null,
-    precipitationChancePercent: null, // From hourly
+    precipitationChancePercent: null,
     precipitationType: raw.precipitation?.precipitationType ?? null,
     sunrise: raw.sunrise ?? null,
     sunset: raw.sunset ?? null,
-    kpIndex: null, // WeatherKit does not provide; use separate Kp API if needed
+    kpIndex: null,
   };
 }
 
@@ -112,8 +157,10 @@ function mapHourly(raw: RawHourly): HourlyForecastItem {
     windSpeedMps: speedKmh * KMH_TO_MPS,
     windGustMps: gustKmh != null ? gustKmh * KMH_TO_MPS : null,
     windDirectionDegrees: raw.windDirection ?? null,
-    cloudCoverPercent: raw.cloudCover ?? null,
-    precipitationChancePercent: raw.precipitationChance ?? null,
+    cloudCoverPercent: normalizeChanceToPercent(raw.cloudCover),
+    precipitationChancePercent: normalizeChanceToPercent(
+      raw.precipitationChance,
+    ),
     temperatureCelsius: raw.temperature ?? null,
   };
 }
@@ -129,7 +176,8 @@ export async function fetchWeather(
 ): Promise<WeatherData> {
   const token = await getToken(env);
   const lang = "en";
-  const datasets = "currentWeather,forecastHourly,forecastDaily";
+  const datasets =
+    "currentWeather,forecastHourly,forecastDaily,forecastNextHour";
   const url = `${WEATHERKIT_BASE}/weather/${lang}/${latitude}/${longitude}?dataSets=${datasets}`;
 
   const res = await fetch(url, {
@@ -159,9 +207,17 @@ export async function fetchWeather(
     ? forecastDaily
     : (forecastDaily?.days ?? []);
   const current = mapCurrent(currentRaw);
-  const nextHour = hourlyRaw[0];
-  if (nextHour?.precipitationChance != null) {
-    current.precipitationChancePercent = nextHour.precipitationChance;
+  const firstHourly = hourlyRaw[0];
+  const hourlyPrecipPct =
+    firstHourly?.precipitationChance != null
+      ? normalizeChanceToPercent(firstHourly.precipitationChance)
+      : null;
+  const nextHourPrecipPct = maxPrecipChanceFromNextHour(
+    json.forecastNextHour as RawForecastNextHour | undefined,
+  );
+  const mergedPrecip = mergeMaxPercents(hourlyPrecipPct, nextHourPrecipPct);
+  if (mergedPrecip != null) {
+    current.precipitationChancePercent = mergedPrecip;
   }
   const today = dailyDays[0];
   if (today) {
