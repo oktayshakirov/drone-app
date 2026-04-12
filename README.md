@@ -1,40 +1,145 @@
-# DronePal
+# Drone Pal
 
-Weather app for drone pilots — Go/No-Go flight conditions, weather metrics, and weight-class-based thresholds.
+Drone Pal is a pre-flight companion for drone pilots of all skill levels. Get an instant Go/No-Go assessment from real-time weather and safety data, tailored to your aircraft weight class—from sub-250g minis to heavier rigs.
+
+> Fly with confidence. Protect your gear. Drone Pal turns your phone into a focused safety dashboard: wind, gusts, visibility, geomagnetic activity, and a streamlined no-fly reference—so you can decide faster and fly smarter.
+
+Whether you are planning a golden-hour shoot or a quick line-of-sight flight, Drone Pal surfaces the signals that matter most before you take off.
+
+## Demo
+
+![Drone Pal](https://oktayshakirov.com/assets/images/projects/drone-pal.png 'Drone Pal')
+
+<p align="center">
+  <a href="https://play.google.com/store/apps/details?id=com.shadev.dronepal&pli=1"><strong>➥ Get it on Google Play</strong></a>
+  &nbsp;·&nbsp;
+  <a href="https://apps.apple.com/de/app/drone-pal/id6760303630?l=en-GB"><strong>➥ Download on the App Store</strong></a>
+</p>
+
+## Features
+
+- **Weight-class thresholds** — Pick a class (under 250g through 1kg+) so wind and safety alerts match how your drone actually behaves.
+- **Go / No-Go at a glance** — Green, yellow, and red status for quick decisions before launch.
+- **Precision weather** — Hyper-local wind, gusts, visibility, and precipitation via **Apple WeatherKit** (JWT-authenticated REST).
+- **24-hour outlook** — Hourly wind, cloud cover, and temperature to plan timing.
+- **Kp index** — Geomagnetic activity for GPS reliability awareness.
+- **No-fly reference map** — Airports, heliports, and caution zones as a planning aid (always verify against local rules).
+- **Sun and sky** — Sunrise/sunset and UV for lighting and comfort.
+- **Modern UI** — Expo + **NativeWind** (Tailwind), dark high-contrast theme.
+
+> **Disclaimer:** Drone Pal is a safety reference tool. Always comply with local aviation laws and official sources before any flight.
 
 ## Stack
 
-- **Expo** (SDK 54) + **TypeScript**
-- **NativeWind** (Tailwind) for styling — dark, high-contrast theme
+- **Expo** (SDK 54) + **TypeScript** + **React Native**
+- **NativeWind** (Tailwind) for styling
 - **expo-location** for GPS
-- **Apple WeatherKit** REST API for weather (JWT auth)
-- **RevenueCat** ready (Pro + 7-day trial; all features unlocked for now)
+- **Apple WeatherKit** REST API (JWT auth)
+- **react-native-maps** — map screen (**Google Maps API key** required on Android for dev/production builds)
+- **RevenueCat** — subscriptions (`react-native-purchases`)
+- **Google Mobile Ads** — configured via Expo plugin in `app.json`
 
-## Run
+## Installation
 
-```bash
+### Prerequisites (once per machine)
+
+- **Node.js:** [Install Node.js](https://nodejs.org/en/download/) (LTS recommended)
+- **Android Studio:** [Android Studio](https://developer.android.com/studio) (Android builds & emulator)
+- **Xcode:** [Xcode](https://developer.apple.com/xcode/) (iOS builds & Simulator, macOS only)
+- **CocoaPods:** for native iOS dependencies (`sudo gem install cocoapods` or your preferred setup)
+
+### Local setup
+
+Clone the repo, open it in your editor, and use the project terminal.
+
+- Install dependencies
+
+```sh
 npm install
-npm start
+
+# OR
+yarn install
 ```
 
-Then press `i` for iOS simulator or `a` for Android emulator, or scan the QR code with Expo Go.
+- **Environment:** copy `.env.example` to `.env` and fill in the values. `.env` is gitignored.
 
-## Environment (WeatherKit)
+```sh
+cp .env.example .env
+```
 
-Copy `.env.example` to `.env` and set the four WeatherKit values. **How to get them:** see **[docs/WEATHERKIT_SETUP.md](docs/WEATHERKIT_SETUP.md)** for step-by-step instructions (Team ID, Services ID, Key ID, and `.p8` private key from Apple Developer).
+| Variable | Purpose |
+| --- | --- |
+| `WEATHERKIT_*` | Live weather (Team ID, Service ID, Key ID, private key). Without valid credentials the app can fall back to **mock weather** for UI work. |
+| `REVENUECAT_API_KEY` | Public SDK key (optional `REVENUECAT_API_KEY_IOS` / `REVENUECAT_API_KEY_ANDROID`). |
+| `EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY` | Android map screen (also read by Gradle from `.env`). |
 
-- `WEATHERKIT_TEAM_ID` — from Apple Developer → Membership
-- `WEATHERKIT_SERVICE_ID` — from Identifiers → Services IDs (e.g. `com.yourcompany.dronepal.weather`)
-- `WEATHERKIT_KEY_ID` — from Keys → create a key with WeatherKit enabled
-- `WEATHERKIT_PRIVATE_KEY` — contents of the downloaded `.p8` file (in quotes, use `\n` for newlines)
+Create and configure WeatherKit keys in [Apple Developer](https://developer.apple.com/) (Identifiers → Services IDs, Keys with WeatherKit enabled).
 
-The project already uses `dotenv` in `app.config.js`, so `.env` is loaded automatically. Without valid credentials, the app uses **mock weather** so you can run and test the UI.
+- Install iOS pods (first time or after native changes)
+
+```sh
+cd ios && pod install && cd ..
+```
+
+- Start the dev server
+
+```sh
+npm start
+
+# OR
+yarn start
+```
+
+Then press **i** for iOS Simulator, **a** for Android emulator, or use a device with the Expo dev workflow.
+
+- Run on Android (native project)
+
+```sh
+npm run android
+
+# OR
+yarn android
+```
+
+- Run on iOS (macOS)
+
+```sh
+npm run ios
+
+# OR
+yarn ios
+```
+
+## Production build
+
+### Android
+
+```sh
+cd android
+./gradlew assembleRelease
+cd ..
+```
+
+Generate a signed **AAB/APK** in Android Studio or with your usual release keystore workflow.
+
+### iOS (macOS, Xcode)
+
+Open `ios/DronePal.xcworkspace` in Xcode and archive, or use `xcodebuild` with scheme **DronePal** and workspace **DronePal.xcworkspace**.
 
 ## Project structure
 
 - `src/api` — WeatherKit client, mock weather
-- `src/components` — Safety Gauge, Weather Cards, Weight Class selector, Metric info modal, placeholders
-- `src/constants` — Drone weight classes & thresholds, metric info copy
-- `src/hooks` — useLocation, useWeather
-- `src/types` — Weather & safety types
-- `src/utils` — JWT (WeatherKit), conversions, Go/No-Go evaluation, env
+- `src/components` — Safety gauge, weather cards, weight class selector, map-related UI
+- `src/constants` — Drone weight classes and thresholds, copy
+- `src/hooks` — Location and weather hooks
+- `src/types` — Weather and safety types
+- `src/utils` — JWT (WeatherKit), conversions, Go/No-Go evaluation, env helpers
+
+## Troubleshooting
+
+- **React Native:** [React Native troubleshooting](https://reactnative.dev/docs/troubleshooting)
+- **Expo:** [Expo documentation](https://docs.expo.dev/)
+
+## License
+
+This project is provided for viewing purposes only. All rights are reserved. No part of this project may be copied, modified, or redistributed without explicit written permission from the author.
