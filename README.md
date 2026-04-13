@@ -8,7 +8,7 @@ Whether you are planning a golden-hour shoot or a quick line-of-sight flight, Dr
 
 ## Demo
 
-![Drone Pal](https://oktayshakirov.com/assets/images/projects/drone-pal.png 'Drone Pal')
+![Drone Pal](https://oktayshakirov.com/assets/images/projects/drone-pal.png "Drone Pal")
 
 <p align="center">
   <a href="https://play.google.com/store/apps/details?id=com.shadev.dronepal&pli=1"><strong>➥ Get it on Google Play</strong></a>
@@ -25,6 +25,7 @@ Whether you are planning a golden-hour shoot or a quick line-of-sight flight, Dr
 - **Kp index** — Geomagnetic activity for GPS reliability awareness.
 - **No-fly reference map** — Airports, heliports, and caution zones as a planning aid (always verify against local rules).
 - **Sun and sky** — Sunrise/sunset and UV for lighting and comfort.
+- **Camera presets** — Scenario-based ISO / shutter / ND / WB starting points
 - **Modern UI** — Expo + **NativeWind** (Tailwind), dark high-contrast theme.
 
 > **Disclaimer:** Drone Pal is a safety reference tool. Always comply with local aviation laws and official sources before any flight.
@@ -67,11 +68,11 @@ yarn install
 cp .env.example .env
 ```
 
-| Variable | Purpose |
-| --- | --- |
-| `WEATHERKIT_*` | Live weather (Team ID, Service ID, Key ID, private key). Without valid credentials the app can fall back to **mock weather** for UI work. |
-| `REVENUECAT_API_KEY` | Public SDK key (optional `REVENUECAT_API_KEY_IOS` / `REVENUECAT_API_KEY_ANDROID`). |
-| `EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY` | Android map screen (also read by Gradle from `.env`). |
+| Variable                                  | Purpose                                                                                                                                   |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `WEATHERKIT_*`                            | Live weather (Team ID, Service ID, Key ID, private key). Without valid credentials the app can fall back to **mock weather** for UI work. |
+| `REVENUECAT_API_KEY`                      | Public SDK key (optional `REVENUECAT_API_KEY_IOS` / `REVENUECAT_API_KEY_ANDROID`).                                                        |
+| `EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY` | Android map screen (also read by Gradle from `.env`).                                                                                     |
 
 Create and configure WeatherKit keys in [Apple Developer](https://developer.apple.com/) (Identifiers → Services IDs, Keys with WeatherKit enabled).
 
@@ -129,7 +130,8 @@ Open `ios/DronePal.xcworkspace` in Xcode and archive, or use `xcodebuild` with s
 ## Project structure
 
 - `src/api` — WeatherKit client, mock weather
-- `src/components` — Safety gauge, weather cards, weight class selector, map-related UI
+- `src/components` — Safety gauge, weather cards, weight class selector, map-related UI, camera preset modals
+- `docs` — Feature notes (e.g. camera settings presets)
 - `src/constants` — Drone weight classes and thresholds, copy
 - `src/hooks` — Location and weather hooks
 - `src/types` — Weather and safety types

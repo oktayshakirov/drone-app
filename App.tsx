@@ -29,6 +29,7 @@ import {
   SettingsModal,
   SubscriptionManagementModal,
   ReviewerPinModal,
+  CameraPresetListModal,
 } from "./src/components";
 import { ConsentDialog } from "./src/components/ads";
 import {
@@ -56,6 +57,7 @@ import { useLocation } from "./src/hooks/useLocation";
 import { useWeather } from "./src/hooks/useWeather";
 import { useRevenueCat } from "./src/hooks/useRevenueCat";
 import { getWeatherKitEnv } from "./src/utils/env";
+import type { CameraPreset } from "./src/constants/cameraPresets";
 import {
   formatWind,
   formatVisibility,
@@ -163,7 +165,11 @@ function AppContentSkeleton() {
   return (
     <SafeAreaProvider>
       <View style={styles.background}>
-        <SafeAreaView className="flex-1" style={styles.safeArea} edges={["top"]}>
+        <SafeAreaView
+          className="flex-1"
+          style={styles.safeArea}
+          edges={["top"]}
+        >
           <StatusBar style="light" />
           <ScrollView
             className="flex-1"
@@ -177,10 +183,14 @@ function AppContentSkeleton() {
             </View>
 
             <View className="flex-row gap-2 mb-4" style={{ width: "100%" }}>
-              <View style={{ flexGrow: CUBE_FLEX, flexShrink: 1, flexBasis: 0 }}>
+              <View
+                style={{ flexGrow: CUBE_FLEX, flexShrink: 1, flexBasis: 0 }}
+              >
                 <SkeletonBlock height={140} borderRadius={16} />
               </View>
-              <View style={{ flexGrow: WIDE_FLEX, flexShrink: 1, flexBasis: 0 }}>
+              <View
+                style={{ flexGrow: WIDE_FLEX, flexShrink: 1, flexBasis: 0 }}
+              >
                 <SkeletonBlock height={140} borderRadius={16} />
               </View>
             </View>
@@ -233,6 +243,9 @@ function AppContent() {
   const [subscriptionManagementVisible, setSubscriptionManagementVisible] =
     useState(false);
   const [reviewerPinModalVisible, setReviewerPinModalVisible] = useState(false);
+  const [cameraPresetListVisible, setCameraPresetListVisible] = useState(false);
+  const [cameraPresetDetail, setCameraPresetDetail] =
+    useState<CameraPreset | null>(null);
 
   const {
     settings,
@@ -489,6 +502,12 @@ function AppContent() {
         latitude: coords?.latitude,
         longitude: coords?.longitude,
       },
+      {
+        title: "Camera",
+        value: "Presets",
+        metricKey: "cameraSettings",
+        shape: "cube",
+      },
     ];
   }, [
     weather,
@@ -688,6 +707,10 @@ function AppContent() {
                         setMapModalVisible(true);
                         return;
                       }
+                      if (key === "cameraSettings") {
+                        setCameraPresetListVisible(true);
+                        return;
+                      }
                       if (!isPro && revenueCatAvailable) {
                         showPaywall();
                         return;
@@ -737,6 +760,23 @@ function AppContent() {
               />
             )}
           </View>
+          <CameraPresetListModal
+            visible={cameraPresetListVisible}
+            isPro={isPro}
+            selectedPreset={cameraPresetDetail}
+            onCloseDetail={() => setCameraPresetDetail(null)}
+            onClose={() => {
+              setCameraPresetDetail(null);
+              setCameraPresetListVisible(false);
+            }}
+            onSelectPreset={(preset) => {
+              if (preset.access === "pro" && !isPro && revenueCatAvailable) {
+                showPaywall();
+                return;
+              }
+              setCameraPresetDetail(preset);
+            }}
+          />
           <InfoModal
             visible={infoMetric != null}
             metricKey={infoMetric}

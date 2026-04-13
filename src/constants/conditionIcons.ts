@@ -13,6 +13,7 @@ export const CONDITION_ICONS: Record<string, string> = {
   uvIndex: 'sunny-outline',
   kpIndex: 'magnet-outline',
   sunriseSunset: 'partly-sunny-outline',
+  cameraSettings: 'videocam-outline',
 };
 
 export function getConditionIcon(metricKey: string): string {
