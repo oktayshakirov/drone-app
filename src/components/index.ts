@@ -15,7 +15,7 @@ export {
   SettingsModal,
   SubscriptionManagementModal,
   ReviewerPinModal,
-  CameraPresetListModal,
-  CameraPresetDetailContent,
+  CameraTutorialListModal,
+  CameraTutorialDetailContent,
 } from "./modals";
 export type { WeatherPreviewData } from "./modals";

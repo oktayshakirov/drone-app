@@ -29,7 +29,7 @@ import {
   SettingsModal,
   SubscriptionManagementModal,
   ReviewerPinModal,
-  CameraPresetListModal,
+  CameraTutorialListModal,
 } from "./src/components";
 import { ConsentDialog } from "./src/components/ads";
 import {
@@ -57,7 +57,7 @@ import { useLocation } from "./src/hooks/useLocation";
 import { useWeather } from "./src/hooks/useWeather";
 import { useRevenueCat } from "./src/hooks/useRevenueCat";
 import { getWeatherKitEnv } from "./src/utils/env";
-import type { CameraPreset } from "./src/constants/cameraPresets";
+import type { CameraTutorial } from "./src/constants/cameraTutorials";
 import {
   formatWind,
   formatVisibility,
@@ -243,9 +243,10 @@ function AppContent() {
   const [subscriptionManagementVisible, setSubscriptionManagementVisible] =
     useState(false);
   const [reviewerPinModalVisible, setReviewerPinModalVisible] = useState(false);
-  const [cameraPresetListVisible, setCameraPresetListVisible] = useState(false);
-  const [cameraPresetDetail, setCameraPresetDetail] =
-    useState<CameraPreset | null>(null);
+  const [cameraTutorialListVisible, setCameraTutorialListVisible] =
+    useState(false);
+  const [cameraTutorialDetail, setCameraTutorialDetail] =
+    useState<CameraTutorial | null>(null);
 
   const {
     settings,
@@ -503,10 +504,10 @@ function AppContent() {
         longitude: coords?.longitude,
       },
       {
-        title: "Camera",
-        value: "Presets",
-        metricKey: "cameraSettings",
-        shape: "cube",
+        title: "Camera tutorials",
+        value: "Start learning",
+        metricKey: "cameraTutorials",
+        shape: "wide",
       },
     ];
   }, [
@@ -707,8 +708,8 @@ function AppContent() {
                         setMapModalVisible(true);
                         return;
                       }
-                      if (key === "cameraSettings") {
-                        setCameraPresetListVisible(true);
+                      if (key === "cameraTutorials") {
+                        setCameraTutorialListVisible(true);
                         return;
                       }
                       if (!isPro && revenueCatAvailable) {
@@ -760,21 +761,21 @@ function AppContent() {
               />
             )}
           </View>
-          <CameraPresetListModal
-            visible={cameraPresetListVisible}
+          <CameraTutorialListModal
+            visible={cameraTutorialListVisible}
             isPro={isPro}
-            selectedPreset={cameraPresetDetail}
-            onCloseDetail={() => setCameraPresetDetail(null)}
+            selectedTutorial={cameraTutorialDetail}
+            onCloseDetail={() => setCameraTutorialDetail(null)}
             onClose={() => {
-              setCameraPresetDetail(null);
-              setCameraPresetListVisible(false);
+              setCameraTutorialDetail(null);
+              setCameraTutorialListVisible(false);
             }}
-            onSelectPreset={(preset) => {
-              if (preset.access === "pro" && !isPro && revenueCatAvailable) {
+            onSelectTutorial={(tutorial) => {
+              if (tutorial.access === "pro" && !isPro && revenueCatAvailable) {
                 showPaywall();
                 return;
               }
-              setCameraPresetDetail(preset);
+              setCameraTutorialDetail(tutorial);
             }}
           />
           <InfoModal

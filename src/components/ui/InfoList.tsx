@@ -27,11 +27,7 @@ interface InfoListProps {
  * Read-only list of label/value items. Same visual style as OptionList (card, border)
  * but not clickable. Use for 24h forecast and other info blocks.
  */
-export function InfoList({
-  title,
-  items,
-  layout = "row",
-}: InfoListProps) {
+export function InfoList({ title, items, layout = "row" }: InfoListProps) {
   if (items.length === 0) return null;
 
   const isWrap = layout === "wrap";
@@ -43,10 +39,7 @@ export function InfoList({
         {items.map((item, index) => (
           <View
             key={index}
-            style={[
-              styles.item,
-              isWrap ? styles.itemWrap : styles.itemRow,
-            ]}
+            style={[styles.item, isWrap ? styles.itemWrap : styles.itemRow]}
           >
             <Text style={styles.label}>{item.label}</Text>
             <Text style={styles.value}>{item.value}</Text>

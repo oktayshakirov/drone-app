@@ -87,11 +87,11 @@ export const METRIC_INFO: Record<string, Info> = {
       "This summary is based on wind, gusts, visibility, and precipitation chance for your selected drone weight class. " +
       "Change your drone weight class in Settings to adjust the thresholds.",
   },
-  cameraSettings: {
-    title: "Camera settings",
+  cameraTutorials: {
+    title: "Camera tutorials",
     body:
-      "Scenario presets suggest ISO, shutter, ND, white balance, and frame rate as starting points for cinematic-style capture. " +
-      "Adjust for your drone model, lighting, and local rules. Some presets are Pro-only.",
+      "Scenario tutorials suggest ISO, shutter, ND, and frame rate as starting points for cinematic-style capture. " +
+      "Adjust for your drone model, lighting, and local rules. Some tutorials are Pro-only.",
   },
 };
 

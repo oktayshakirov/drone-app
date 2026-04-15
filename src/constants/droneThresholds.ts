@@ -1,5 +1,5 @@
 /**
- * Drone weight class presets and thresholds for Go/No-Go logic.
+ * Drone weight class tutorials and thresholds for Go/No-Go logic.
  *
  * Based on:
  * - docs/DRONE_FLIGHT_CONDITIONS_REFERENCE.md
@@ -24,7 +24,7 @@ export interface WeightClassOption {
 const VISIBILITY_RED_M = 1000;
 
 /**
- * Preset weight classes and thresholds (mph, m, %).
+ * Tutorial weight classes and thresholds (mph, m, %).
  *
  * - windGustMphRed: no-go when gust exceeds this (mph).
  * - windSpeedMphYellow: caution when sustained wind exceeds this (mph).

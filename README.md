@@ -25,7 +25,7 @@ Whether you are planning a golden-hour shoot or a quick line-of-sight flight, Dr
 - **Kp index** — Geomagnetic activity for GPS reliability awareness.
 - **No-fly reference map** — Airports, heliports, and caution zones as a planning aid (always verify against local rules).
 - **Sun and sky** — Sunrise/sunset and UV for lighting and comfort.
-- **Camera presets** — Scenario-based ISO / shutter / ND / WB starting points
+- **Camera tutorials** — Scenario-based ISO / shutter / ND / WB starting points
 - **Modern UI** — Expo + **NativeWind** (Tailwind), dark high-contrast theme.
 
 > **Disclaimer:** Drone Pal is a safety reference tool. Always comply with local aviation laws and official sources before any flight.
@@ -130,8 +130,8 @@ Open `ios/DronePal.xcworkspace` in Xcode and archive, or use `xcodebuild` with s
 ## Project structure
 
 - `src/api` — WeatherKit client, mock weather
-- `src/components` — Safety gauge, weather cards, weight class selector, map-related UI, camera preset modals
-- `docs` — Feature notes (e.g. camera settings presets)
+- `src/components` — Safety gauge, weather cards, weight class selector, map-related UI, camera tutorial modals
+- `docs` — Feature notes (e.g. camera settings tutorials)
 - `src/constants` — Drone weight classes and thresholds, copy
 - `src/hooks` — Location and weather hooks
 - `src/types` — Weather and safety types

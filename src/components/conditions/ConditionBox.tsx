@@ -133,7 +133,14 @@ export function ConditionBox({
       ) : (
         <View className="flex-1 flex-row items-center justify-between gap-3">
           <View className="flex-row items-center gap-3 flex-1 min-w-0">
-            <View className={isLarge ? "w-14 h-14 rounded-xl bg-surface/80 items-center justify-center flex-shrink-0" : "w-10 h-10 rounded-lg bg-surface/80 items-center justify-center flex-shrink-0"}>
+            <View
+              className={
+                isLarge
+                  ? "w-14 h-14 rounded-xl items-center justify-center flex-shrink-0"
+                  : "w-10 h-10 rounded-lg items-center justify-center flex-shrink-0"
+              }
+              style={metricKey === "cameraTutorials" ? undefined : { backgroundColor: "rgba(30, 41, 59, 0.8)" }}
+            >
               <Ionicons
                 name={iconName}
                 size={s.iconWide}
@@ -153,8 +160,8 @@ export function ConditionBox({
 
           {!hideInfoIcon && metricKey !== "wind" && !isLarge && (
             <Ionicons
-              name="information-circle-outline"
-              size={22}
+              name={metricKey === "cameraTutorials" ? "chevron-forward" : "information-circle-outline"}
+              size={metricKey === "cameraTutorials" ? 22 : 22}
               color={ICON_COLOR}
               style={{ flexShrink: 0 }}
             />

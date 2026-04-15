@@ -28,7 +28,12 @@ export interface MapCardProps {
  * Wide grid card that opens the in-app map when pressed.
  * Shows a small map preview of the current location when coordinates are provided.
  */
-export function MapCard({ onPress, latitude, longitude, size = "default" }: MapCardProps) {
+export function MapCard({
+  onPress,
+  latitude,
+  longitude,
+  size = "default",
+}: MapCardProps) {
   const hasCoords =
     latitude != null &&
     longitude != null &&
@@ -71,7 +76,7 @@ export function MapCard({ onPress, latitude, longitude, size = "default" }: MapC
             )}
           </View>
           <View className="flex-1 min-w-0">
-            <Text className="section-label text-xs">No Fly Zone Map</Text>
+            <Text className="section-label text-xs">No Fly Zone</Text>
             <Text className="text-white font-semibold mt-0.5 text-lg">
               View map
             </Text>
