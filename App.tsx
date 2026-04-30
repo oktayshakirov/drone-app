@@ -113,29 +113,6 @@ function AppWithOnboarding() {
 const LAST_FREE_REFRESH_KEY = "dronepal_lastFreeRefresh";
 const FREE_REFRESH_INTERVAL_MS = 12 * 60 * 60 * 1000;
 
-function SkeletonBlock({
-  height,
-  width = "100%",
-  borderRadius = 12,
-}: {
-  height: number;
-  width?: number | `${number}%`;
-  borderRadius?: number;
-}) {
-  return (
-    <View
-      style={{
-        height,
-        width,
-        borderRadius,
-        backgroundColor: "#2b2b2b",
-        borderWidth: 1,
-        borderColor: "#3b3b3b",
-      }}
-    />
-  );
-}
-
 function OfflineScreen({ onRetry }: { onRetry: () => void }) {
   return (
     <SafeAreaProvider>
@@ -155,76 +132,6 @@ function OfflineScreen({ onRetry }: { onRetry: () => void }) {
           >
             <Text className="text-slate-100 font-semibold">Try again</Text>
           </Pressable>
-        </SafeAreaView>
-      </View>
-    </SafeAreaProvider>
-  );
-}
-
-function AppContentSkeleton() {
-  return (
-    <SafeAreaProvider>
-      <View style={styles.background}>
-        <SafeAreaView
-          className="flex-1"
-          style={styles.safeArea}
-          edges={["top"]}
-        >
-          <StatusBar style="light" />
-          <ScrollView
-            className="flex-1"
-            contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
-            showsVerticalScrollIndicator={false}
-          >
-            <View className="mb-3 py-1.5 flex-row items-center justify-between gap-3">
-              <SkeletonBlock height={20} width="72%" borderRadius={8} />
-              <SkeletonBlock height={28} width={28} borderRadius={14} />
-              <SkeletonBlock height={27} width={27} borderRadius={8} />
-            </View>
-
-            <View className="flex-row gap-2 mb-4" style={{ width: "100%" }}>
-              <View
-                style={{ flexGrow: CUBE_FLEX, flexShrink: 1, flexBasis: 0 }}
-              >
-                <SkeletonBlock height={140} borderRadius={16} />
-              </View>
-              <View
-                style={{ flexGrow: WIDE_FLEX, flexShrink: 1, flexBasis: 0 }}
-              >
-                <SkeletonBlock height={140} borderRadius={16} />
-              </View>
-            </View>
-
-            <View className="mt-4 gap-2">
-              <View className="flex-row gap-2">
-                <View style={{ flex: CUBE_FLEX }}>
-                  <SkeletonBlock height={120} borderRadius={16} />
-                </View>
-                <View style={{ flex: WIDE_FLEX }}>
-                  <SkeletonBlock height={120} borderRadius={16} />
-                </View>
-              </View>
-              <View className="flex-row gap-2">
-                <View style={{ flex: WIDE_FLEX }}>
-                  <SkeletonBlock height={120} borderRadius={16} />
-                </View>
-                <View style={{ flex: CUBE_FLEX }}>
-                  <SkeletonBlock height={120} borderRadius={16} />
-                </View>
-              </View>
-              <View className="flex-row gap-2">
-                <View style={{ flex: 1 }}>
-                  <SkeletonBlock height={110} borderRadius={16} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <SkeletonBlock height={110} borderRadius={16} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <SkeletonBlock height={110} borderRadius={16} />
-                </View>
-              </View>
-            </View>
-          </ScrollView>
         </SafeAreaView>
       </View>
     </SafeAreaProvider>
@@ -426,72 +333,76 @@ function AppContent() {
   }, [weather, settings.units, heroMinMax.minCelsius, heroMinMax.maxCelsius]);
 
   const conditionsGridItems = useMemo((): GridItem[] => {
-    if (!weather) return [];
-    const c = weather.current;
+    const c = weather?.current;
     const useImperial = settings.units === "imperial";
     return [
       {
         title: "Visibility",
         value:
-          c.visibilityMeters != null
+          c?.visibilityMeters != null
             ? useImperial
               ? formatVisibility(c.visibilityMeters)
               : formatVisibilityMeters(c.visibilityMeters)
-            : "—",
+            : "",
         metricKey: "visibility",
         shape: "cube",
       },
       {
         title: "Wind",
-        value: formatWind(c.wind.speedMps, settings.windUnit),
+        value: c ? formatWind(c.wind.speedMps, settings.windUnit) : "",
         metricKey: "wind",
         shape: "wide",
-        windSpeedFormatted: formatWind(c.wind.speedMps, settings.windUnit),
+        windSpeedFormatted: c
+          ? formatWind(c.wind.speedMps, settings.windUnit)
+          : "",
         windGustFormatted:
-          c.wind.gustMps != null
+          c?.wind.gustMps != null
             ? formatWind(c.wind.gustMps, settings.windUnit)
-            : "—",
-        windDirectionCardinal: degreesToCardinal(c.wind.directionDegrees),
-        directionDegrees: c.wind.directionDegrees ?? undefined,
+            : "",
+        windDirectionCardinal:
+          c?.wind.directionDegrees != null
+            ? degreesToCardinal(c.wind.directionDegrees)
+            : "",
+        directionDegrees: c?.wind.directionDegrees ?? undefined,
       },
       {
         title: "Sunshine time",
         value:
-          c.sunrise && c.sunset
+          c?.sunrise && c?.sunset
             ? `${formatSunTime(c.sunrise, settings.timeFormat === "24h")} / ${formatSunTime(c.sunset, settings.timeFormat === "24h")}`
-            : "—",
+            : "",
         metricKey: "sunriseSunset",
         shape: "wide",
-        sunrise: c.sunrise ?? undefined,
-        sunset: c.sunset ?? undefined,
+        sunrise: c?.sunrise ?? undefined,
+        sunset: c?.sunset ?? undefined,
       },
       {
         title: "Cloud cover",
-        value: formatPercent(c.cloudCoverPercent),
+        value: c ? formatPercent(c.cloudCoverPercent) : "",
         metricKey: "cloudCover",
         shape: "cube",
       },
       {
         title: "Precipitation",
-        value: formatPercent(c.precipitationChancePercent),
+        value: c ? formatPercent(c.precipitationChancePercent) : "",
         metricKey: "precipitation",
         shape: "cube",
       },
       {
         title: "Kp index",
-        value: c.kpIndex != null ? String(c.kpIndex) : "—",
+        value: c?.kpIndex != null ? String(c.kpIndex) : "",
         metricKey: "kpIndex",
         shape: "cube",
       },
       {
         title: "UV index",
-        value: c.uvIndex != null ? String(c.uvIndex) : "—",
+        value: c?.uvIndex != null ? String(c.uvIndex) : "",
         metricKey: "uvIndex",
         shape: "cube",
       },
       {
         title: "Humidity",
-        value: formatPercent(c.humidityPercent),
+        value: c ? formatPercent(c.humidityPercent) : "",
         metricKey: "humidity",
         shape: "cube",
       },
@@ -520,13 +431,12 @@ function AppContent() {
   ]);
 
   const loading = locationLoading || weatherLoading;
+  const isInitialLoading = loading && !weather;
+  const showHeaderRow = Boolean(coords) || isInitialLoading;
+  const showConditionsLayout = Boolean(weather) || isInitialLoading;
 
   if (isOffline && !weather) {
     return <OfflineScreen onRetry={refetchWeather} />;
-  }
-
-  if (loading && !weather) {
-    return <AppContentSkeleton />;
   }
 
   const showOfflineBanner = isOffline && Boolean(weather);
@@ -560,10 +470,11 @@ function AppContent() {
                   </Text>
                 </View>
               )}
-              {coords && (
+              {showHeaderRow && (
                 <View className="flex-row items-center justify-between mb-3 py-1.5">
                   <Pressable
                     onPress={() => {
+                      if (isInitialLoading) return;
                       if (!isPro && revenueCatAvailable) {
                         showPaywall();
                       } else if (isPro || !revenueCatAvailable) {
@@ -577,8 +488,10 @@ function AppContent() {
                       className="text-slate-400 text-sm flex-1"
                       numberOfLines={1}
                     >
-                      {placeName ??
-                        `${coords.latitude.toFixed(2)}°, ${coords.longitude.toFixed(2)}°`}
+                      {coords
+                        ? (placeName ??
+                          `${coords.latitude.toFixed(2)}°, ${coords.longitude.toFixed(2)}°`)
+                        : ""}
                     </Text>
                   </Pressable>
                   <Pressable
@@ -622,7 +535,7 @@ function AppContent() {
                 }}
                 currentPlaceName={devicePlaceName}
               />
-              {weather && (
+              {showConditionsLayout && (
                 <View
                   className="flex-row gap-2 mb-4"
                   style={{ width: "100%", flexWrap: "nowrap" }}
@@ -632,8 +545,10 @@ function AppContent() {
                     style={{ flexGrow: CUBE_FLEX, flexShrink: 1, flexBasis: 0 }}
                   >
                     <GoNoGoCard
-                      status={safetyStatus}
+                      status={weather ? safetyStatus : "green"}
+                      isLoading={isInitialLoading}
                       onPress={() => {
+                        if (isInitialLoading) return;
                         if (!isPro && revenueCatAvailable) {
                           showPaywall();
                         } else {
@@ -648,12 +563,15 @@ function AppContent() {
                   >
                     <ConditionBox
                       title="Weather"
-                      value={conditionCodeToLabel(
-                        weather.current.conditionCode,
-                      )}
+                      value={
+                        weather
+                          ? conditionCodeToLabel(weather.current.conditionCode)
+                          : ""
+                      }
                       metricKey="weather"
                       shape="wide"
                       onPress={(key) => {
+                        if (isInitialLoading) return;
                         if (!isPro && revenueCatAvailable) {
                           showPaywall();
                         } else {
@@ -661,33 +579,49 @@ function AppContent() {
                         }
                       }}
                       iconName={
-                        conditionCodeToIcon(
-                          weather.current.conditionCode,
-                        ) as React.ComponentProps<typeof Ionicons>["name"]
+                        weather
+                          ? (conditionCodeToIcon(
+                              weather.current.conditionCode,
+                            ) as React.ComponentProps<typeof Ionicons>["name"])
+                          : "partly-sunny-outline"
                       }
-                      currentTemp={formatTemp(
-                        weather.current.temperatureCelsius,
-                        settings.units === "imperial",
-                      )}
-                      minTemp={formatTemp(
-                        heroMinMax.minCelsius,
-                        settings.units === "imperial",
-                      )}
-                      maxTemp={formatTemp(
-                        heroMinMax.maxCelsius,
-                        settings.units === "imperial",
-                      )}
+                      currentTemp={
+                        weather
+                          ? formatTemp(
+                              weather.current.temperatureCelsius,
+                              settings.units === "imperial",
+                            )
+                          : ""
+                      }
+                      minTemp={
+                        weather
+                          ? formatTemp(
+                              heroMinMax.minCelsius,
+                              settings.units === "imperial",
+                            )
+                          : ""
+                      }
+                      maxTemp={
+                        weather
+                          ? formatTemp(
+                              heroMinMax.maxCelsius,
+                              settings.units === "imperial",
+                            )
+                          : ""
+                      }
                       hideInfoIcon
+                      isLoading={isInitialLoading}
                     />
                   </View>
                 </View>
               )}
 
-              {weather && (
+              {showConditionsLayout && (
                 <View className="mt-4">
                   <ConditionsGrid
                     items={conditionsGridItems}
                     onMetricPress={(key) => {
+                      if (isInitialLoading) return;
                       if (key === "map") {
                         setMapModalVisible(true);
                         return;
@@ -704,7 +638,8 @@ function AppContent() {
                     }}
                     formatSunTime={formatSunTime}
                     use24h={settings.timeFormat === "24h"}
-                    conditionStatus={conditionStatus}
+                    conditionStatus={isInitialLoading ? null : conditionStatus}
+                    isLoading={isInitialLoading}
                     droneWeightClassLabel={
                       WEIGHT_CLASS_OPTIONS.find(
                         (o) => o.id === settings.droneWeightClass,

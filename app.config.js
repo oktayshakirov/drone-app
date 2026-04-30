@@ -48,6 +48,15 @@ module.exports = {
     },
     plugins: [
       "expo-updates",
+      [
+        "expo-splash-screen",
+        {
+          image: "./assets/splash-icon.png",
+          resizeMode: "contain",
+          backgroundColor: "#181818",
+          imageWidth: 180,
+        },
+      ],
       "expo-location",
       "expo-tracking-transparency",
       [

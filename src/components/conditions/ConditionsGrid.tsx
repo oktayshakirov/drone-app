@@ -26,6 +26,7 @@ export interface ConditionsGridProps {
   conditionStatus?: Record<string, SafetyStatus> | null;
   /** Drone weight class label (e.g. "Sub-250 g"); shown on the right of the "Conditions" title. */
   droneWeightClassLabel?: string | null;
+  isLoading?: boolean;
 }
 
 /**
@@ -72,12 +73,7 @@ function isSunshineItem(
   item: GridItem,
   formatSunTime: ((iso: string, use24h: boolean) => string) | undefined,
 ): boolean {
-  return (
-    item.metricKey === "sunriseSunset" &&
-    item.sunrise != null &&
-    item.sunset != null &&
-    formatSunTime != null
-  );
+  return item.metricKey === "sunriseSunset" && formatSunTime != null;
 }
 
 export function ConditionsGrid({
@@ -87,6 +83,7 @@ export function ConditionsGrid({
   use24h = false,
   conditionStatus,
   droneWeightClassLabel,
+  isLoading = false,
 }: ConditionsGridProps) {
   const { width } = useWindowDimensions();
   const boxSize = width >= TABLET_BREAKPOINT_WIDTH ? "large" : "default";
@@ -102,6 +99,7 @@ export function ConditionsGrid({
           latitude={item.latitude}
           longitude={item.longitude}
           size={boxSize}
+          isLoading={isLoading}
         />
       );
     }
@@ -109,12 +107,13 @@ export function ConditionsGrid({
       return (
         <WindCard
           windSpeed={item.windSpeedFormatted}
-          windGust={item.windGustFormatted ?? "—"}
-          directionCardinal={item.windDirectionCardinal ?? "—"}
+          windGust={item.windGustFormatted ?? ""}
+          directionCardinal={item.windDirectionCardinal ?? ""}
           directionDegrees={item.directionDegrees ?? null}
           onPress={() => onMetricPress("wind")}
           statusIndicator={statusIndicator}
           size={boxSize}
+          isLoading={isLoading}
         />
       );
     }
@@ -127,6 +126,7 @@ export function ConditionsGrid({
           use24h={use24h}
           onPress={() => onMetricPress("sunriseSunset")}
           size={boxSize}
+          isLoading={isLoading}
         />
       );
     }
@@ -139,6 +139,7 @@ export function ConditionsGrid({
         onPress={onMetricPress}
         statusIndicator={statusIndicator}
         size={boxSize}
+        isLoading={isLoading}
       />
     );
   };

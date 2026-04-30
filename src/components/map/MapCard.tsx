@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import MapView from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
+import { LoadingBox } from "../conditions/LoadingBox";
 import { BOX_HEIGHT, BOX_HEIGHT_TABLET } from "../conditions/types";
 
 const ICON_COLOR = "#94a3b8";
@@ -22,6 +23,7 @@ export interface MapCardProps {
   longitude?: number;
   /** Larger min height on tablet (same layout). */
   size?: "default" | "large";
+  isLoading?: boolean;
 }
 
 /**
@@ -33,6 +35,7 @@ export function MapCard({
   latitude,
   longitude,
   size = "default",
+  isLoading = false,
 }: MapCardProps) {
   const hasCoords =
     latitude != null &&
@@ -89,6 +92,7 @@ export function MapCard({
           style={{ flexShrink: 0 }}
         />
       </View>
+      {isLoading && <LoadingBox />}
     </TouchableOpacity>
   );
 }

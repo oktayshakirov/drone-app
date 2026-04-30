@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Path, Circle } from "react-native-svg";
+import { LoadingBox } from "./LoadingBox";
 import { BOX_HEIGHT, BOX_HEIGHT_TABLET } from "./types";
 
 const ICON_COLOR = "#94a3b8";
@@ -41,6 +42,7 @@ export interface SunshineCurveCardProps {
   size?: "default" | "large";
   /** When set, card is pressable and opens info modal. */
   onPress?: () => void;
+  isLoading?: boolean;
 }
 
 function sunPosition(t: number, arcWidth: number, arcHeight: number): { x: number; y: number } {
@@ -56,6 +58,7 @@ export function SunshineCurveCard({
   use24h,
   size = "default",
   onPress,
+  isLoading = false,
 }: SunshineCurveCardProps) {
   const s = SIZES[size];
   const svgViewWidth = s.arcWidth + 2 * s.paddingX;
@@ -82,8 +85,8 @@ export function SunshineCurveCard({
   );
 
   const sunXOffset = sunX + s.paddingX;
-  const sunriseStr = sunrise ? formatTime(sunrise, use24h) : "—";
-  const sunsetStr = sunset ? formatTime(sunset, use24h) : "—";
+  const sunriseStr = sunrise ? formatTime(sunrise, use24h) : "";
+  const sunsetStr = sunset ? formatTime(sunset, use24h) : "";
 
   const content = (
     <>
@@ -151,12 +154,14 @@ export function SunshineCurveCard({
         style={style}
       >
         {content}
+        {isLoading && <LoadingBox />}
       </TouchableOpacity>
     );
   }
   return (
     <View className={className} style={style}>
       {content}
+      {isLoading && <LoadingBox />}
     </View>
   );
 }

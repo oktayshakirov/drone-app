@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { SafetyStatus } from "../../types/weather";
+import { LoadingBox } from "./LoadingBox";
 import { BOX_HEIGHT, BOX_HEIGHT_TABLET } from "./types";
 
 const STATUS_CONFIG: Record<
@@ -36,13 +37,14 @@ export interface GoNoGoCardProps {
   onPress?: () => void;
   /** Larger min height on tablet (same layout). */
   size?: "default" | "large";
+  isLoading?: boolean;
 }
 
 /**
  * Hero cube showing overall flight condition: Go (green), Caution (yellow), or No Go (red).
  * Replaces the drone image in the first hero slot when Go/No-Go is enabled.
  */
-export function GoNoGoCard({ status, onPress, size = "default" }: GoNoGoCardProps) {
+export function GoNoGoCard({ status, onPress, size = "default", isLoading = false }: GoNoGoCardProps) {
   const config = STATUS_CONFIG[status];
   const minHeight = size === "large" ? BOX_HEIGHT_TABLET : BOX_HEIGHT;
   const content = (
@@ -60,6 +62,7 @@ export function GoNoGoCard({ status, onPress, size = "default" }: GoNoGoCardProp
           {config.label}
         </Text>
       </View>
+      {isLoading && <LoadingBox />}
     </View>
   );
 

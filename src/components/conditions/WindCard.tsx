@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useDeviceHeading } from "../../hooks/useDeviceHeading";
 import { useSettings } from "../../contexts/SettingsContext";
 import { StatusIndicatorDot } from "./StatusIndicatorDot";
+import { LoadingBox } from "./LoadingBox";
 import { BOX_HEIGHT, BOX_HEIGHT_TABLET } from "./types";
 
 const ICON_COLOR = "#94a3b8";
@@ -47,6 +48,7 @@ export interface WindCardProps {
   statusIndicator?: "yellow" | "red";
   /** Larger layout for info modal preview. */
   size?: "default" | "large";
+  isLoading?: boolean;
 }
 
 function Tick({
@@ -92,12 +94,14 @@ export function WindCard({
   onPress,
   statusIndicator,
   size = "default",
+  isLoading = false,
 }: WindCardProps) {
   const { settings } = useSettings();
   const deviceHeading = useDeviceHeading(settings.compassEnabled);
   const windDir = directionDegrees != null ? directionDegrees : 0;
   const isNative = Platform.OS === "ios" || Platform.OS === "android";
-  const useCompass = settings.compassEnabled && isNative && deviceHeading != null;
+  const useCompass =
+    settings.compassEnabled && isNative && deviceHeading != null;
   const roseRotation = useCompass ? -deviceHeading! : 0;
   const arrowRotation = useCompass ? windDir - deviceHeading! : windDir;
 
@@ -112,24 +116,74 @@ export function WindCard({
       <View className="flex-1 min-w-0">
         <View className="flex-row items-center gap-1.5">
           <Ionicons name="leaf-outline" size={s.iconSize} color={ICON_COLOR} />
-          <Text className={size === "large" ? "section-label text-base" : "section-label text-xs"}>Wind</Text>
+          <Text
+            className={
+              size === "large"
+                ? "section-label text-base"
+                : "section-label text-xs"
+            }
+          >
+            Wind
+          </Text>
         </View>
-        <Text className={size === "large" ? "text-white font-semibold text-lg mt-0.5" : "text-white font-semibold text-base mt-0.5"}>{windSpeed}</Text>
+        <Text
+          className={
+            size === "large"
+              ? "text-white font-semibold text-lg mt-0.5"
+              : "text-white font-semibold text-base mt-0.5"
+          }
+        >
+          {windSpeed}
+        </Text>
         <View className="flex-row items-center gap-1.5 mt-1">
           <Ionicons name="flag-outline" size={s.iconSize} color={ICON_COLOR} />
-          <Text className={size === "large" ? "section-label text-base" : "section-label text-xs"}>Gust</Text>
+          <Text
+            className={
+              size === "large"
+                ? "section-label text-base"
+                : "section-label text-xs"
+            }
+          >
+            Gust
+          </Text>
         </View>
-        <Text className={size === "large" ? "text-white font-semibold text-lg mt-0.5" : "text-white font-semibold text-base mt-0.5"}>{windGust}</Text>
+        <Text
+          className={
+            size === "large"
+              ? "text-white font-semibold text-lg mt-0.5"
+              : "text-white font-semibold text-base mt-0.5"
+          }
+        >
+          {windGust}
+        </Text>
       </View>
       <View
         className="items-center justify-center"
         style={{ width: s.compassViewWidth }}
       >
-        <Text className={size === "large" ? "section-label text-xs mb-1" : "section-label text-[9px] mb-1"}>Direction</Text>
-        <Svg width={s.compassSize} height={s.compassSize} viewBox={`0 0 ${s.compassSize} ${s.compassSize}`}>
+        <Text
+          className={
+            size === "large"
+              ? "section-label text-xs mb-1"
+              : "section-label text-[9px] mb-1"
+          }
+        >
+          Direction
+        </Text>
+        <Svg
+          width={s.compassSize}
+          height={s.compassSize}
+          viewBox={`0 0 ${s.compassSize} ${s.compassSize}`}
+        >
           <G transform={`rotate(${roseRotation} ${center} ${center})`}>
             {[45, 135, 225, 315].map((deg) => (
-              <Tick key={deg} degrees={deg} center={center} ringR={ringR} tickLength={s.tickLength} />
+              <Tick
+                key={deg}
+                degrees={deg}
+                center={center}
+                ringR={ringR}
+                tickLength={s.tickLength}
+              />
             ))}
             <SvgText
               x={center}
@@ -189,6 +243,7 @@ export function WindCard({
         style={style}
       >
         {content}
+        {isLoading && <LoadingBox />}
       </View>
     );
   }
@@ -201,6 +256,7 @@ export function WindCard({
       style={style}
     >
       {content}
+      {isLoading && <LoadingBox />}
     </TouchableOpacity>
   );
 }
