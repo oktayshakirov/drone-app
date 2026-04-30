@@ -7,18 +7,30 @@ import type {
 import { signWeatherKitJwt } from "../utils/jwt";
 
 const WEATHERKIT_BASE = "https://weatherkit.apple.com/api/v1";
+const WEATHER_DATASETS = "currentWeather,forecastHourly,forecastDaily";
+const RETRIABLE_STATUS = new Set([502, 503, 504]);
+const inFlight = new Map<string, Promise<WeatherData>>();
+let requestCounter = 0;
 
 export interface WeatherKitEnv {
-  teamId: string;
-  serviceId: string;
-  keyId: string;
-  privateKeyPem: string;
+  teamId?: string;
+  serviceId?: string;
+  keyId?: string;
+  privateKeyPem?: string;
+  proxyBaseUrl?: string;
+  directEnabled?: boolean;
+  weatherDisabled?: boolean;
+  retryMax?: number;
+  requestTimeoutMs?: number;
 }
 
 /**
  * Fetch a fresh JWT for WeatherKit (ES256 signed with @noble/curves).
  */
 async function getToken(env: WeatherKitEnv): Promise<string> {
+  if (!env.teamId || !env.serviceId || !env.keyId || !env.privateKeyPem) {
+    throw new Error("Weather service is not configured.");
+  }
   return signWeatherKitJwt(
     env.teamId,
     env.serviceId,
@@ -69,16 +81,9 @@ interface RawHourly {
  * Raw WeatherKit daily forecast day (sun times come from here, not currentWeather).
  */
 interface RawDayForecast {
-  forecastStart?: string;
   sunrise?: string;
   sunset?: string;
   sun?: { sunrise?: string; sunset?: string };
-}
-
-/** Minute-by-minute "next hour" precip (REST: `forecastNextHour`). */
-interface RawForecastNextHour {
-  minutes?: { precipitationChance?: number }[];
-  summary?: { precipitationChance?: number }[];
 }
 
 function normalizeChanceToPercent(
@@ -87,37 +92,6 @@ function normalizeChanceToPercent(
   if (value == null || Number.isNaN(value)) return null;
   const percent = value <= 1 ? value * 100 : value;
   return Math.max(0, Math.min(100, percent));
-}
-
-/**
- * Max precip probability across next-hour minutes/summaries (more granular than hourly buckets).
- * Values from WeatherKit are 0–1.
- */
-function maxPrecipChanceFromNextHour(
-  raw: RawForecastNextHour | undefined | null,
-): number | null {
-  if (!raw) return null;
-  const parts: number[] = [];
-  for (const m of raw.minutes ?? []) {
-    const p = normalizeChanceToPercent(m.precipitationChance);
-    if (p != null) parts.push(p);
-  }
-  for (const s of raw.summary ?? []) {
-    const p = normalizeChanceToPercent(s.precipitationChance);
-    if (p != null) parts.push(p);
-  }
-  if (parts.length === 0) return null;
-  return Math.max(...parts);
-}
-
-function mergeMaxPercents(
-  ...values: (number | null | undefined)[]
-): number | null {
-  const nums = values.filter(
-    (v): v is number => v != null && !Number.isNaN(v),
-  );
-  if (nums.length === 0) return null;
-  return Math.max(...nums);
 }
 
 function mapWind(raw: RawCurrentWeather): WindConditions {
@@ -165,38 +139,130 @@ function mapHourly(raw: RawHourly): HourlyForecastItem {
   };
 }
 
-/**
- * Fetch current weather and hourly forecast for a location.
- * Requires valid WeatherKit credentials in env.
- */
-export async function fetchWeather(
+function roundCoord(v: number): number {
+  return Math.round(v * 100) / 100;
+}
+
+function hasDirectCredentials(env: WeatherKitEnv): boolean {
+  return Boolean(env.teamId && env.serviceId && env.keyId && env.privateKeyPem);
+}
+
+function safeErrorMessage(status: number, contentType: string | null): string {
+  if (status === 401 || status === 403) return "Weather service authentication failed.";
+  if (status === 429) return "Weather service is busy. Please try again shortly.";
+  if (RETRIABLE_STATUS.has(status)) return "Weather service is temporarily unavailable.";
+  if (contentType?.includes("text/html")) return "Weather service returned an unexpected response.";
+  return "Weather service request failed.";
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function logStart(
+  source: "proxy" | "apple",
+  url: string,
+  latitude: number,
+  longitude: number,
+  datasets: string,
+): { requestId: number; startedAt: number } {
+  const requestId = ++requestCounter;
+  const startedAt = Date.now();
+  console.info(
+    `[Weather] #${requestId} start source=${source} lat=${latitude} lon=${longitude} datasets=${datasets} url=${url}`,
+  );
+  return { requestId, startedAt };
+}
+
+function logEnd(
+  requestId: number,
+  res: Response,
+  startedAt: number,
+): void {
+  console.info(
+    `[Weather] #${requestId} end ok=${res.ok} status=${res.status} durationMs=${Date.now() - startedAt} contentType=${res.headers.get("content-type") ?? "n/a"}`,
+  );
+}
+
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number,
+): Promise<Response> {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: ac.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function requestProxy(
+  latitude: number,
+  longitude: number,
+  env: WeatherKitEnv,
+): Promise<WeatherData> {
+  const base = (env.proxyBaseUrl ?? "").trim();
+  if (!base) throw new Error("Proxy URL missing.");
+  const urlObj = new URL(base);
+  urlObj.searchParams.set("lat", String(latitude));
+  urlObj.searchParams.set("lon", String(longitude));
+  urlObj.searchParams.set("datasets", WEATHER_DATASETS);
+  const url = urlObj.toString();
+  const { requestId, startedAt } = logStart(
+    "proxy",
+    url,
+    latitude,
+    longitude,
+    WEATHER_DATASETS,
+  );
+  const res = await fetchWithTimeout(
+    url,
+    { method: "GET", headers: { Accept: "application/json" } },
+    env.requestTimeoutMs ?? 15000,
+  );
+  logEnd(requestId, res, startedAt);
+  if (!res.ok) {
+    throw new Error(safeErrorMessage(res.status, res.headers.get("content-type")));
+  }
+  return (await res.json()) as WeatherData;
+}
+
+async function requestAppleDirect(
   latitude: number,
   longitude: number,
   env: WeatherKitEnv,
 ): Promise<WeatherData> {
   const token = await getToken(env);
   const lang = "en";
-  const datasets =
-    "currentWeather,forecastHourly,forecastDaily,forecastNextHour";
-  const url = `${WEATHERKIT_BASE}/weather/${lang}/${latitude}/${longitude}?dataSets=${datasets}`;
+  const url = `${WEATHERKIT_BASE}/weather/${lang}/${latitude}/${longitude}?dataSets=${WEATHER_DATASETS}`;
+  const { requestId, startedAt } = logStart(
+    "apple",
+    url,
+    latitude,
+    longitude,
+    WEATHER_DATASETS,
+  );
 
-  const res = await fetch(url, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
+  const res = await fetchWithTimeout(
+    url,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
     },
-  });
+    env.requestTimeoutMs ?? 15000,
+  );
+  logEnd(requestId, res, startedAt);
 
   if (!res.ok) {
-    const text = await res.text();
-    if (__DEV__) {
-      console.warn("[WeatherKit] Error response:", res.status, text);
-    }
-    throw new Error(`WeatherKit error ${res.status}: ${text}`);
+    throw new Error(safeErrorMessage(res.status, res.headers.get("content-type")));
   }
 
   const json = await res.json();
-
   const currentRaw = (json.currentWeather as RawCurrentWeather) ?? {};
   const hourlyRaw = (json.forecastHourly?.hours as RawHourly[]) ?? [];
   const forecastDaily = json.forecastDaily as
@@ -208,16 +274,10 @@ export async function fetchWeather(
     : (forecastDaily?.days ?? []);
   const current = mapCurrent(currentRaw);
   const firstHourly = hourlyRaw[0];
-  const hourlyPrecipPct =
-    firstHourly?.precipitationChance != null
-      ? normalizeChanceToPercent(firstHourly.precipitationChance)
-      : null;
-  const nextHourPrecipPct = maxPrecipChanceFromNextHour(
-    json.forecastNextHour as RawForecastNextHour | undefined,
-  );
-  const mergedPrecip = mergeMaxPercents(hourlyPrecipPct, nextHourPrecipPct);
-  if (mergedPrecip != null) {
-    current.precipitationChancePercent = mergedPrecip;
+  if (firstHourly?.precipitationChance != null) {
+    current.precipitationChancePercent = normalizeChanceToPercent(
+      firstHourly.precipitationChance,
+    );
   }
   const today = dailyDays[0];
   if (today) {
@@ -229,4 +289,88 @@ export async function fetchWeather(
     current,
     hourly: hourlyRaw.map(mapHourly),
   };
+}
+
+async function executeWithRetry(
+  task: () => Promise<WeatherData>,
+  maxRetries: number,
+): Promise<WeatherData> {
+  let attempt = 0;
+  while (true) {
+    try {
+      return await task();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown";
+      const isRetriable =
+        /temporarily unavailable|busy|aborted|abort|timed out|network request failed/i.test(
+          message,
+        );
+      if (!isRetriable || attempt >= maxRetries) {
+        if (/aborted|abort|timed out/i.test(message)) {
+          throw new Error("Weather service timed out. Please try again.");
+        }
+        throw error;
+      }
+      const delay = Math.min(8000, 700 * 2 ** attempt);
+      console.warn(
+        `[Weather] retry attempt=${attempt + 1} delayMs=${delay} reason=${message}`,
+      );
+      await sleep(delay);
+      attempt += 1;
+    }
+  }
+}
+
+/**
+ * Fetch current weather and hourly forecast for a location.
+ * Proxy-first, retry-enabled and deduplicated by rounded coordinates.
+ */
+export async function fetchWeather(
+  latitude: number,
+  longitude: number,
+  env: WeatherKitEnv,
+): Promise<WeatherData> {
+  if (env.weatherDisabled) {
+    throw new Error("Live weather is temporarily disabled.");
+  }
+
+  const key = `${roundCoord(latitude)},${roundCoord(longitude)}:${WEATHER_DATASETS}`;
+  const existing = inFlight.get(key);
+  if (existing) return existing;
+
+  const task = (async () => {
+    const retries = env.retryMax ?? 3;
+    const hasProxy = Boolean(env.proxyBaseUrl?.trim());
+    const allowDirect = env.directEnabled ?? true;
+
+    if (hasProxy) {
+      try {
+        return await executeWithRetry(
+          () => requestProxy(latitude, longitude, env),
+          retries,
+        );
+      } catch (proxyError) {
+        if (!allowDirect) {
+          throw proxyError;
+        }
+        console.warn("[Weather] proxy failed, trying direct WeatherKit fallback");
+      }
+    }
+
+    if (!allowDirect || !hasDirectCredentials(env)) {
+      throw new Error("Weather service unavailable right now.");
+    }
+
+    return executeWithRetry(
+      () => requestAppleDirect(latitude, longitude, env),
+      retries,
+    );
+  })();
+
+  inFlight.set(key, task);
+  try {
+    return await task;
+  } finally {
+    inFlight.delete(key);
+  }
 }

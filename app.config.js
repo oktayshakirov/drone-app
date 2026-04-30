@@ -5,6 +5,7 @@ module.exports = {
     name: "DronePal",
     slug: "dronepal",
     version: "1.0.0",
+    runtimeVersion: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "dark",
@@ -46,6 +47,7 @@ module.exports = {
       },
     },
     plugins: [
+      "expo-updates",
       "expo-location",
       "expo-tracking-transparency",
       [
@@ -65,11 +67,21 @@ module.exports = {
       weatherKitServiceId: process.env.WEATHERKIT_SERVICE_ID,
       weatherKitKeyId: process.env.WEATHERKIT_KEY_ID,
       weatherKitPrivateKey: process.env.WEATHERKIT_PRIVATE_KEY,
+      weatherProxyBaseUrl: process.env.WEATHER_PROXY_BASE_URL,
+      weatherDirectEnabled: process.env.WEATHER_DIRECT_ENABLED,
+      weatherDisabled: process.env.WEATHER_DISABLED,
+      weatherRetryMax: process.env.WEATHER_RETRY_MAX,
+      weatherRequestTimeoutMs: process.env.WEATHER_REQUEST_TIMEOUT_MS,
       revenueCatApiKeyIos:
         process.env.REVENUECAT_API_KEY_IOS ?? process.env.REVENUECAT_API_KEY,
       revenueCatApiKeyAndroid:
         process.env.REVENUECAT_API_KEY_ANDROID ??
         process.env.REVENUECAT_API_KEY,
+    },
+    updates: {
+      url:
+        process.env.EXPO_UPDATES_URL ??
+        "https://u.expo.dev/1c5dbeef-3c5a-4b39-aa6b-36445de02b3d",
     },
   },
 };

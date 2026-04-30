@@ -260,7 +260,6 @@ function AppContent() {
     coords,
     placeName,
     devicePlaceName,
-    error: locationError,
     loading: locationLoading,
     setPickedLocation,
     clearPickedLocation,
@@ -268,9 +267,7 @@ function AppContent() {
   const env = useMemo(() => getWeatherKitEnv(), []);
   const {
     data: weather,
-    error: weatherError,
     loading: weatherLoading,
-    isMock,
     refetch: refetchWeather,
   } = useWeather(coords?.latitude ?? null, coords?.longitude ?? null, env);
 
@@ -520,7 +517,6 @@ function AppContent() {
   ]);
 
   const loading = locationLoading || weatherLoading;
-  const error = locationError ?? weatherError;
 
   if (isOffline && !weather) {
     return <OfflineScreen onRetry={refetchWeather} />;
@@ -681,21 +677,6 @@ function AppContent() {
                       hideInfoIcon
                     />
                   </View>
-                </View>
-              )}
-
-              {error && (
-                <View className="mt-4 p-3 rounded-lg bg-danger-red/20">
-                  <Text className="text-danger-red text-sm">{error}</Text>
-                </View>
-              )}
-
-              {isMock && (
-                <View className="mt-2 p-2 rounded-lg bg-caution-yellow/20">
-                  <Text className="text-caution-yellow text-xs">
-                    Using sample weather. Add WeatherKit credentials for live
-                    data.
-                  </Text>
                 </View>
               )}
 
