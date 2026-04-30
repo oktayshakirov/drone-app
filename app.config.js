@@ -68,6 +68,7 @@ module.exports = {
       weatherKitKeyId: process.env.WEATHERKIT_KEY_ID,
       weatherKitPrivateKey: process.env.WEATHERKIT_PRIVATE_KEY,
       weatherProxyBaseUrl: process.env.WEATHER_PROXY_BASE_URL,
+      airportsProxyBaseUrl: process.env.AIRPORTS_PROXY_BASE_URL,
       weatherDirectEnabled: process.env.WEATHER_DIRECT_ENABLED,
       weatherDisabled: process.env.WEATHER_DISABLED,
       weatherRetryMax: process.env.WEATHER_RETRY_MAX,

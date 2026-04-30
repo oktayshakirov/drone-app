@@ -1,6 +1,15 @@
 const APPLE_BASE = "https://weatherkit.apple.com/api/v1";
 const DEFAULT_DATASETS = "currentWeather,forecastHourly,forecastDaily";
 
+interface KVNamespace {
+  get<T = unknown>(key: string, type: "json"): Promise<T | null>;
+  put(
+    key: string,
+    value: string,
+    options?: { expirationTtl?: number },
+  ): Promise<void>;
+}
+
 type Env = {
   WEATHERKIT_TEAM_ID: string;
   WEATHERKIT_SERVICE_ID: string;
@@ -11,13 +20,25 @@ type Env = {
   WEATHER_CACHE: KVNamespace;
 };
 
-type CachePayload = {
+type WeatherCachePayload = {
   fetchedAt: number;
   weather: WeatherData;
 };
 
-const inFlight = new Map<string, Promise<Response>>();
+type AirportsCachePayload = {
+  fetchedAt: number;
+  airports: Airport[];
+};
+
+const weatherInFlight = new Map<string, Promise<Response>>();
+const airportsInFlight = new Map<string, Promise<Response>>();
 const KMH_TO_MPS = 1 / 3.6;
+const DEFAULT_AIRPORTS_RADIUS_KM = 50;
+const OVERPASS_URLS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+  "https://lz4.overpass-api.de/api/interpreter",
+];
 
 type WindConditions = {
   speedMps: number;
@@ -55,6 +76,33 @@ type HourlyForecastItem = {
 type WeatherData = {
   current: CurrentWeatherSummary;
   hourly: HourlyForecastItem[];
+};
+
+type AirportType =
+  | "large_airport"
+  | "medium_airport"
+  | "small_airport"
+  | "heliport"
+  | "seaplane_base";
+
+type Airport = {
+  icao: string;
+  iata: string;
+  name: string;
+  city: string;
+  country: string;
+  type: AirportType;
+  lat: number;
+  lon: number;
+  elevation?: number;
+  scheduled_service?: boolean;
+};
+
+type OverpassElement = {
+  lat?: number;
+  lon?: number;
+  center?: { lat: number; lon: number };
+  tags?: Record<string, string>;
 };
 
 type RawCurrentWeather = {
@@ -168,14 +216,129 @@ async function readCache(
   now: number,
   freshTtl: number,
   staleTtl: number,
-): Promise<{ fresh: CachePayload | null; stale: CachePayload | null }> {
-  const cached = await env.WEATHER_CACHE.get<CachePayload>(key, "json");
+): Promise<{
+  fresh: WeatherCachePayload | null;
+  stale: WeatherCachePayload | null;
+}> {
+  const cached = await env.WEATHER_CACHE.get<WeatherCachePayload>(key, "json");
   if (!cached?.fetchedAt) return { fresh: null, stale: null };
   const ageSeconds = Math.floor((now - cached.fetchedAt) / 1000);
   return {
     fresh: ageSeconds <= freshTtl ? cached : null,
     stale: ageSeconds <= staleTtl ? cached : null,
   };
+}
+
+async function readAirportsCache(
+  env: Env,
+  key: string,
+  now: number,
+  freshTtl: number,
+  staleTtl: number,
+): Promise<{
+  fresh: AirportsCachePayload | null;
+  stale: AirportsCachePayload | null;
+}> {
+  const cached = await env.WEATHER_CACHE.get<AirportsCachePayload>(key, "json");
+  if (!cached?.fetchedAt) return { fresh: null, stale: null };
+  const ageSeconds = Math.floor((now - cached.fetchedAt) / 1000);
+  return {
+    fresh: ageSeconds <= freshTtl ? cached : null,
+    stale: ageSeconds <= staleTtl ? cached : null,
+  };
+}
+
+function bboxFromCenter(lat: number, lng: number, radiusKm: number): {
+  south: number;
+  west: number;
+  north: number;
+  east: number;
+} {
+  const latDelta = radiusKm / 111.32;
+  const cosLat = Math.cos((lat * Math.PI) / 180);
+  const lngDelta = radiusKm / (111.32 * Math.max(cosLat, 1e-5));
+  return {
+    south: lat - latDelta,
+    west: lng - lngDelta,
+    north: lat + latDelta,
+    east: lng + lngDelta,
+  };
+}
+
+function osmTypeToAirportType(
+  aeroway: string,
+  tags?: Record<string, string>,
+): AirportType {
+  const t = (aeroway || "").toLowerCase();
+  if (t === "helipad" || t === "heliport") return "heliport";
+  if (t === "seaplane_base") return "seaplane_base";
+  if (t === "aerodrome") {
+    const iata = (tags?.iata ?? "").trim();
+    if (/^[A-Z]{3}$/i.test(iata)) return "medium_airport";
+  }
+  return "small_airport";
+}
+
+async function fetchAirportsFromOverpass(
+  lat: number,
+  lng: number,
+  radiusKm: number,
+): Promise<Airport[]> {
+  const { south, west, north, east } = bboxFromCenter(lat, lng, radiusKm);
+  const query = `[out:json][timeout:25];(node["aeroway"~"aerodrome|helipad|heliport|seaplane_base"](${south},${west},${north},${east});way["aeroway"~"aerodrome|helipad|heliport|seaplane_base"](${south},${west},${north},${east}););out center;`;
+
+  let lastStatus: number | null = null;
+  for (const endpoint of OVERPASS_URLS) {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Accept: "application/json",
+        "User-Agent": "DronePal-Airports-Proxy/1.0 (+https://dronepal.app)",
+      },
+      body: `data=${encodeURIComponent(query)}`,
+    });
+    if (!res.ok) {
+      lastStatus = res.status;
+      continue;
+    }
+    const contentType = res.headers.get("content-type") ?? "";
+    if (!contentType.includes("application/json")) {
+      lastStatus = 406;
+      continue;
+    }
+    const json = (await res.json()) as { elements?: OverpassElement[] };
+    const elements = json.elements ?? [];
+    const list: Airport[] = [];
+    for (const el of elements) {
+      const latEl = el.lat ?? el.center?.lat;
+      const lonEl = el.lon ?? el.center?.lon;
+      if (latEl == null || lonEl == null) continue;
+      const name = el.tags?.name ?? el.tags?.ref ?? "Airport";
+      list.push({
+        icao: el.tags?.icao ?? el.tags?.ref ?? "",
+        iata: el.tags?.iata ?? "",
+        name: String(name),
+        city: el.tags?.addr_city ?? "",
+        country: el.tags?.addr_country ?? "",
+        type: osmTypeToAirportType(el.tags?.aeroway ?? "", el.tags),
+        lat: Number(latEl),
+        lon: Number(lonEl),
+      });
+    }
+    return list.filter(
+      (a) =>
+        Number.isFinite(a.lat) &&
+        Number.isFinite(a.lon) &&
+        a.lat >= -90 &&
+        a.lat <= 90 &&
+        a.lon >= -180 &&
+        a.lon <= 180,
+    );
+  }
+  throw new Error(
+    `Airports upstream request failed. status=${lastStatus ?? "unknown"}`,
+  );
 }
 
 function toPercent(value: number | null | undefined): number | null {
@@ -287,8 +450,73 @@ export default {
         return withCors(json({ ok: true, service: "drone-pal-weather-proxy" }));
       }
 
-      if (url.pathname !== "/weather" || req.method !== "GET") {
+      if (
+        url.pathname !== "/weather" &&
+        url.pathname !== "/airports"
+      ) {
         return withCors(json({ error: "Not found" }, 404));
+      }
+
+      if (req.method !== "GET") {
+        return withCors(json({ error: "Method not allowed" }, 405));
+      }
+
+      if (url.pathname === "/airports") {
+        const lat = parseNumber(url.searchParams.get("lat"));
+        const lon = parseNumber(url.searchParams.get("lon"));
+        const radiusKm =
+          parseNumber(url.searchParams.get("radiusKm")) ??
+          DEFAULT_AIRPORTS_RADIUS_KM;
+        if (lat == null || lon == null) {
+          return withCors(json({ error: "Invalid lat/lon" }, 400));
+        }
+        const roundedLat = roundCoord(lat);
+        const roundedLon = roundCoord(lon);
+        const roundedRadius = Math.max(5, Math.min(200, Math.round(radiusKm)));
+        const cacheKey = `ap:v1:${roundedLat}:${roundedLon}:${roundedRadius}`;
+        const inflightKey = `${roundedLat},${roundedLon}:${roundedRadius}`;
+        const now = Date.now();
+        const { fresh, stale } = getTtls(env);
+        const cached = await readAirportsCache(
+          env,
+          cacheKey,
+          now,
+          fresh,
+          stale,
+        );
+        if (cached.fresh) {
+          return withCors(json(cached.fresh.airports));
+        }
+        const existing = airportsInFlight.get(inflightKey);
+        if (existing) return await existing;
+
+        const task = (async () => {
+          try {
+            const airports = await fetchAirportsFromOverpass(
+              lat,
+              lon,
+              roundedRadius,
+            );
+            const payload: AirportsCachePayload = {
+              fetchedAt: Date.now(),
+              airports,
+            };
+            await env.WEATHER_CACHE.put(cacheKey, JSON.stringify(payload), {
+              expirationTtl: stale,
+            });
+            return withCors(json(airports));
+          } catch (error) {
+            if (cached.stale) return withCors(json(cached.stale.airports));
+            const message =
+              error instanceof Error ? error.message : "Airports proxy failed";
+            return withCors(json({ error: message }, 502));
+          } finally {
+            airportsInFlight.delete(inflightKey);
+          }
+        })();
+
+        airportsInFlight.set(inflightKey, task);
+        return await task;
       }
 
       const lat = parseNumber(url.searchParams.get("lat"));
@@ -309,13 +537,13 @@ export default {
         return withCors(json(cached.fresh.weather));
       }
 
-      const existing = inFlight.get(coalesceKey);
+      const existing = weatherInFlight.get(coalesceKey);
       if (existing) return await existing;
 
       const task = (async () => {
         try {
           const weather = await fetchFromApple(env, lat, lon, datasets);
-          const payload: CachePayload = { fetchedAt: Date.now(), weather };
+          const payload: WeatherCachePayload = { fetchedAt: Date.now(), weather };
           await env.WEATHER_CACHE.put(key, JSON.stringify(payload), {
             expirationTtl: stale,
           });
@@ -328,11 +556,11 @@ export default {
             error instanceof Error ? error.message : "Weather proxy failed";
           return withCors(json({ error: message }, 502));
         } finally {
-          inFlight.delete(coalesceKey);
+          weatherInFlight.delete(coalesceKey);
         }
       })();
 
-      inFlight.set(coalesceKey, task);
+      weatherInFlight.set(coalesceKey, task);
       return await task;
     } catch (error) {
       const message =
