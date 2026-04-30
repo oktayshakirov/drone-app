@@ -3,7 +3,12 @@ import type {
   DroneClassThresholds,
   SafetyStatus,
 } from "../types/weather";
-import { mpsToMph } from "./conversions";
+import type { WindUnit } from "../types/settings";
+import {
+  formatVisibilityWithUnits,
+  formatWind,
+  mpsToMph,
+} from "./conversions";
 
 /** Kp index: caution above 5, no-go above 6 (reference doc). */
 const KP_YELLOW = 5;
@@ -19,6 +24,11 @@ export interface ConditionBreakdownItem {
   detail: string;
 }
 
+interface BreakdownDisplayOptions {
+  useImperial: boolean;
+  windUnit: WindUnit;
+}
+
 /**
  * Per-condition status for display in the flight conditions info modal.
  * Order: Visibility, Wind speed, Wind gust, Precipitation, Kp index, UV index.
@@ -26,6 +36,7 @@ export interface ConditionBreakdownItem {
 export function getConditionBreakdown(
   current: CurrentWeatherSummary,
   thresholds: DroneClassThresholds,
+  options: BreakdownDisplayOptions,
 ): ConditionBreakdownItem[] {
   const windGustMph =
     current.wind.gustMps != null
@@ -49,10 +60,18 @@ export function getConditionBreakdown(
     kp >= KP_RED ? "red" : kp >= KP_YELLOW ? "yellow" : "green";
   const uvStatus: SafetyStatus = uv >= UV_YELLOW ? "yellow" : "green";
 
-  const visibilityValue =
-    visibilityM >= 1000
-      ? `${(visibilityM / 1000).toFixed(1)} km`
-      : `${visibilityM} m`;
+  const visibilityValue = formatVisibilityWithUnits(
+    visibilityM,
+    options.useImperial,
+  );
+  const visibilityThresholdText = formatVisibilityWithUnits(
+    thresholds.visibilityMetersRed,
+    options.useImperial,
+  );
+  const windSpeedThresholdMps = thresholds.windSpeedMphYellow / 2.23694;
+  const windGustThresholdMps = thresholds.windGustMphRed / 2.23694;
+  const windSpeedThresholdText = formatWind(windSpeedThresholdMps, options.windUnit);
+  const windGustThresholdText = formatWind(windGustThresholdMps, options.windUnit);
 
   return [
     {
@@ -60,21 +79,24 @@ export function getConditionBreakdown(
       label: "Visibility",
       status: visibilityStatus,
       value: visibilityValue,
-      detail: `No-go below ${thresholds.visibilityMetersRed / 1000} km`,
+      detail: `No-go below ${visibilityThresholdText}`,
     },
     {
       id: "windSpeed",
       label: "Wind speed",
       status: windSpeedStatus,
-      value: `${windSpeedMph.toFixed(1)} mph`,
-      detail: `Caution above ${thresholds.windSpeedMphYellow} mph`,
+      value: formatWind(current.wind.speedMps, options.windUnit),
+      detail: `Caution above ${windSpeedThresholdText}`,
     },
     {
       id: "windGust",
       label: "Wind gust",
       status: windGustStatus,
-      value: `${windGustMph.toFixed(1)} mph`,
-      detail: `No-go above ${thresholds.windGustMphRed} mph`,
+      value: formatWind(
+        current.wind.gustMps ?? current.wind.speedMps,
+        options.windUnit,
+      ),
+      detail: `No-go above ${windGustThresholdText}`,
     },
     {
       id: "precipitation",

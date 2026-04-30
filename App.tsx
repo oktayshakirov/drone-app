@@ -381,8 +381,11 @@ function AppContent() {
   const conditionBreakdown = useMemo(() => {
     if (!weather) return null;
     const thresholds = getThresholdsForWeightClass(settings.droneWeightClass);
-    return getConditionBreakdown(weather.current, thresholds);
-  }, [weather, settings.droneWeightClass]);
+    return getConditionBreakdown(weather.current, thresholds, {
+      useImperial: settings.units === "imperial",
+      windUnit: settings.windUnit,
+    });
+  }, [weather, settings.droneWeightClass, settings.units, settings.windUnit]);
 
   const conditionStatus = useMemo(() => {
     if (!conditionBreakdown?.length) return null;
