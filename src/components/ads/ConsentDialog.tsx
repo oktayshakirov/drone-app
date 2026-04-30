@@ -13,10 +13,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const TRACKING_CONSENT_KEY = "trackingConsent";
 
 const COLORS = {
-  background: "#0f172a",
-  text: "#e2e8f0",
+  background: "#181818",
+  text: "#f1f5f9",
   textMuted: "#94a3b8",
-  highlight: "#38bdf8",
+  highlight: "#cbd5e1",
 };
 
 export interface ConsentDialogProps {
