@@ -113,31 +113,6 @@ function AppWithOnboarding() {
 const LAST_FREE_REFRESH_KEY = "dronepal_lastFreeRefresh";
 const FREE_REFRESH_INTERVAL_MS = 12 * 60 * 60 * 1000;
 
-function OfflineScreen({ onRetry }: { onRetry: () => void }) {
-  return (
-    <SafeAreaProvider>
-      <View style={styles.background}>
-        <SafeAreaView className="flex-1 items-center justify-center px-6">
-          <StatusBar style="light" />
-          <Ionicons name="cloud-offline-outline" size={56} color="#94a3b8" />
-          <Text className="text-slate-200 text-xl font-semibold mt-5 text-center">
-            You are offline
-          </Text>
-          <Text className="text-slate-400 text-sm mt-2 text-center">
-            Connect to the internet to load live weather and map data.
-          </Text>
-          <Pressable
-            onPress={onRetry}
-            className="mt-6 px-5 py-3 rounded-xl bg-slate-700 active:opacity-80"
-          >
-            <Text className="text-slate-100 font-semibold">Try again</Text>
-          </Pressable>
-        </SafeAreaView>
-      </View>
-    </SafeAreaProvider>
-  );
-}
-
 function AppContent() {
   const [infoMetric, setInfoMetric] = useState<string | null>(null);
   const [locationPickerVisible, setLocationPickerVisible] = useState(false);
@@ -435,11 +410,8 @@ function AppContent() {
   const showHeaderRow = Boolean(coords) || isInitialLoading;
   const showConditionsLayout = Boolean(weather) || isInitialLoading;
 
-  if (isOffline && !weather) {
-    return <OfflineScreen onRetry={refetchWeather} />;
-  }
-
   const showOfflineBanner = isOffline && Boolean(weather);
+  const showOfflineLoadingBanner = isOffline && !weather;
 
   return (
     <SafeAreaProvider>
@@ -467,6 +439,13 @@ function AppContent() {
                 <View className="mb-3 p-3 rounded-lg bg-slate-700/40 border border-slate-600/60">
                   <Text className="text-slate-200 text-xs">
                     You are offline. Showing last loaded data.
+                  </Text>
+                </View>
+              )}
+              {showOfflineLoadingBanner && (
+                <View className="mb-3 p-3 rounded-lg bg-slate-700/40 border border-slate-600/60">
+                  <Text className="text-slate-200 text-xs">
+                    You are offline. Waiting for connection to load live data.
                   </Text>
                 </View>
               )}
