@@ -467,10 +467,7 @@ function AppContent() {
                       className="text-slate-400 text-sm flex-1"
                       numberOfLines={1}
                     >
-                      {coords
-                        ? (placeName ??
-                          `${coords.latitude.toFixed(2)}°, ${coords.longitude.toFixed(2)}°`)
-                        : ""}
+                      {coords ? (placeName ?? `Finding your area...`) : ""}
                     </Text>
                   </Pressable>
                   <Pressable
@@ -594,7 +591,6 @@ function AppContent() {
                   </View>
                 </View>
               )}
-
               {showConditionsLayout && (
                 <View className="mt-4">
                   <ConditionsGrid
@@ -627,7 +623,6 @@ function AppContent() {
                   />
                 </View>
               )}
-
               {isPro && revenueCatAvailable && (
                 <Pressable
                   onPress={() => setSubscriptionManagementVisible(true)}
@@ -651,7 +646,6 @@ function AppContent() {
                 </Text>
               </View>
             </ScrollView>
-
             {AdBannerComponent && (
               <AdBannerComponent
                 key={consentCompleted ? "with-consent" : "pending"}
