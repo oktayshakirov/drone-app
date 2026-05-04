@@ -6,3 +6,4 @@ export { SubscriptionManagementModal } from "./SubscriptionManagementModal";
 export { ReviewerPinModal } from "./ReviewerPinModal";
 export { CameraTutorialListModal } from "./CameraTutorialListModal";
 export { CameraTutorialDetailContent } from "./CameraTutorialDetailModal";
+export { DocumentsModal } from "./DocumentsModal";

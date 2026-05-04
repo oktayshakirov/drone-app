@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Platform } from "react-native";
+import Constants from "expo-constants";
 import type { CustomerInfo } from "react-native-purchases";
 import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 import {
@@ -10,7 +11,6 @@ import {
   type RevenueCatError,
 } from "../services/revenueCat";
 import { ENTITLEMENT_PRO } from "../constants/revenueCat";
-import { useDevPro } from "../contexts/DevProContext";
 import { useReviewerPro } from "../contexts/ReviewerProContext";
 
 export interface UseRevenueCatResult {
@@ -50,14 +50,16 @@ function mockCustomerInfo(productId: "monthly" | "lifetime"): CustomerInfo {
 }
 
 export function useRevenueCat(): UseRevenueCatResult {
-  const devPro = useDevPro();
   const reviewerPro = useReviewerPro();
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<RevenueCatError | null>(null);
 
-  const isAvailable = Platform.OS === "ios" || Platform.OS === "android";
-  const simulatePro = devPro?.simulatePro ?? "off";
+  // RevenueCat billing APIs are unavailable in most iOS/Android simulators.
+  // Skip SDK initialization there to avoid repetitive BILLING_UNAVAILABLE logs.
+  const isAvailable =
+    (Platform.OS === "ios" || Platform.OS === "android") &&
+    Constants.isDevice === true;
 
   const fetchCustomerInfo = useCallback(async () => {
     if (!isAvailable) {
@@ -161,14 +163,11 @@ export function useRevenueCat(): UseRevenueCatResult {
     }
   }, [isAvailable, fetchCustomerInfo]);
 
-  const isSimulatedPro = __DEV__ && (simulatePro === "monthly" || simulatePro === "lifetime");
   const isReviewerPro = reviewerPro?.isReviewerPro ?? false;
-  const effectiveCustomerInfo: CustomerInfo | null = isSimulatedPro
-    ? mockCustomerInfo(simulatePro)
-    : isReviewerPro
-      ? mockCustomerInfo("lifetime")
-      : customerInfo;
-  const isPro = isSimulatedPro || isReviewerPro || hasProEntitlement(customerInfo);
+  const effectiveCustomerInfo: CustomerInfo | null = isReviewerPro
+    ? mockCustomerInfo("lifetime")
+    : customerInfo;
+  const isPro = isReviewerPro || hasProEntitlement(customerInfo);
 
   return {
     isPro,

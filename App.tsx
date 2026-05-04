@@ -30,6 +30,7 @@ import {
   SubscriptionManagementModal,
   ReviewerPinModal,
   CameraTutorialListModal,
+  DocumentsModal,
 } from "./src/components";
 import { ConsentDialog } from "./src/components/ads";
 import {
@@ -42,7 +43,6 @@ import {
   useOnboarding,
 } from "./src/contexts/OnboardingContext";
 import { OnboardingScreen } from "./src/components/onboarding";
-import { DevProProvider } from "./src/contexts/DevProContext";
 import {
   ReviewerProProvider,
   useReviewerPro,
@@ -69,13 +69,11 @@ import {
 } from "./src/utils/conversions";
 export default function App() {
   return (
-    <DevProProvider>
-      <ReviewerProProvider>
-        <SettingsProvider>
-          <AppWithOnboardingAndPaywall />
-        </SettingsProvider>
-      </ReviewerProProvider>
-    </DevProProvider>
+    <ReviewerProProvider>
+      <SettingsProvider>
+        <AppWithOnboardingAndPaywall />
+      </SettingsProvider>
+    </ReviewerProProvider>
   );
 }
 
@@ -118,6 +116,7 @@ function AppContent() {
   const [locationPickerVisible, setLocationPickerVisible] = useState(false);
   const [mapModalVisible, setMapModalVisible] = useState(false);
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
+  const [documentsModalVisible, setDocumentsModalVisible] = useState(false);
   const [AdBannerComponent, setAdBannerComponent] =
     useState<React.ComponentType<{ isPro: boolean }> | null>(null);
   const [consentCompleted, setConsentCompleted] = useState(false);
@@ -471,6 +470,13 @@ function AppContent() {
                     </Text>
                   </Pressable>
                   <Pressable
+                    onPress={() => setDocumentsModalVisible(true)}
+                    className="p-2 -m-2 mr-2 rounded-lg active:opacity-70"
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  >
+                    <Ionicons name="folder-outline" size={22} color="#94a3b8" />
+                  </Pressable>
+                  <Pressable
                     onPress={() => setSettingsModalVisible(true)}
                     className="p-2 -m-2 rounded-lg active:opacity-70"
                     hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -716,6 +722,10 @@ function AppContent() {
             setTimeFormat={setTimeFormat}
             setCompassEnabled={setCompassEnabled}
             setDroneWeightClass={setDroneWeightClass}
+          />
+          <DocumentsModal
+            visible={documentsModalVisible}
+            onClose={() => setDocumentsModalVisible(false)}
           />
           <SubscriptionManagementModal
             visible={subscriptionManagementVisible}

@@ -21,6 +21,12 @@ module.exports = {
       infoPlist: {
         NSLocationWhenInUseUsageDescription:
           "DronePal uses your location to fetch weather for your flying site.",
+        NSCameraUsageDescription:
+          "DronePal uses your camera to capture drone and pilot documents.",
+        NSPhotoLibraryUsageDescription:
+          "DronePal uses your photo library to attach existing drone and pilot documents.",
+        NSPhotoLibraryAddUsageDescription:
+          "DronePal can save captured document photos to your photo library.",
         GADApplicationIdentifier: "ca-app-pub-5852582960793521~8965039341",
         NSUserTrackingUsageDescription:
           "This allows us to show you relevant ads and support DronePal.",
@@ -55,6 +61,15 @@ module.exports = {
           resizeMode: "contain",
           backgroundColor: "#181818",
           imageWidth: 180,
+        },
+      ],
+      [
+        "expo-image-picker",
+        {
+          photosPermission:
+            "Allow DronePal to access your photos to attach flight documents.",
+          cameraPermission:
+            "Allow DronePal to use your camera to capture flight documents.",
         },
       ],
       "expo-location",

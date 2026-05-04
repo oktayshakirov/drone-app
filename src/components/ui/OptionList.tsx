@@ -4,9 +4,9 @@ import { Ionicons } from "@expo/vector-icons";
 
 const CARD_BG = "#141414";
 const BORDER_COLOR = "#262626";
-const SELECTED_BG = "rgba(255, 198, 130, 0.2)";
+const SELECTED_BG = "rgba(255, 198, 130, 0.8)";
 const TEXT_UNSELECTED = "#cbd5e1";
-const TEXT_SELECTED = "#ffffff";
+const TEXT_SELECTED = "#000000";
 const LABEL_ICON_COLOR = "#94a3b8";
 const LABEL_ICON_SIZE = 18;
 
@@ -43,10 +43,7 @@ export function OptionList<T extends string | boolean>({
 
   const optionsContent = (
     <View
-      style={[
-        styles.container,
-        isHorizontal && styles.containerHorizontal,
-      ]}
+      style={[styles.container, isHorizontal && styles.containerHorizontal]}
     >
       {options.map((opt, index) => {
         const isSelected = value === opt.id;
@@ -58,7 +55,10 @@ export function OptionList<T extends string | boolean>({
             style={[
               styles.optionRow,
               isHorizontal && styles.optionRowHorizontal,
-              !isLast && (isHorizontal ? styles.optionRowBorderRight : styles.optionRowBorderBottom),
+              !isLast &&
+                (isHorizontal
+                  ? styles.optionRowBorderRight
+                  : styles.optionRowBorderBottom),
               isSelected && styles.optionRowSelected,
             ]}
             activeOpacity={0.7}
@@ -84,7 +84,11 @@ export function OptionList<T extends string | boolean>({
       <View style={styles.section}>
         <View style={styles.labelRow}>
           {iconName != null && (
-            <Ionicons name={iconName} size={LABEL_ICON_SIZE} color={LABEL_ICON_COLOR} />
+            <Ionicons
+              name={iconName}
+              size={LABEL_ICON_SIZE}
+              color={LABEL_ICON_COLOR}
+            />
           )}
           <Text style={styles.labelText}>{label}</Text>
         </View>

@@ -17,5 +17,6 @@ export {
   ReviewerPinModal,
   CameraTutorialListModal,
   CameraTutorialDetailContent,
+  DocumentsModal,
 } from "./modals";
 export type { WeatherPreviewData } from "./modals";
