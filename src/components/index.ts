@@ -14,7 +14,6 @@ export {
   MapModal,
   SettingsModal,
   SubscriptionManagementModal,
-  ReviewerPinModal,
   CameraTutorialListModal,
   CameraTutorialDetailContent,
   DocumentsModal,

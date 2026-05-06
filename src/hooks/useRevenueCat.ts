@@ -11,7 +11,6 @@ import {
   type RevenueCatError,
 } from "../services/revenueCat";
 import { ENTITLEMENT_PRO } from "../constants/revenueCat";
-import { useReviewerPro } from "../contexts/ReviewerProContext";
 
 export interface UseRevenueCatResult {
   /** User has "Drone Pal Pro" entitlement. */
@@ -34,32 +33,22 @@ export interface UseRevenueCatResult {
   showCustomerCenter: () => Promise<void>;
   /** True when RevenueCat is configured and available on this platform. */
   isAvailable: boolean;
-}
-
-/** Build mock CustomerInfo for dev Pro simulation. */
-function mockCustomerInfo(productId: "monthly" | "lifetime"): CustomerInfo {
-  return {
-    entitlements: {
-      active: {
-        [ENTITLEMENT_PRO]: {
-          productIdentifier: productId,
-        } as CustomerInfo["entitlements"]["active"][string],
-      },
-    },
-  } as unknown as CustomerInfo;
+  /** True after entitlement state has been fetched successfully at least once. */
+  entitlementResolved: boolean;
 }
 
 export function useRevenueCat(): UseRevenueCatResult {
-  const reviewerPro = useReviewerPro();
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<RevenueCatError | null>(null);
+  const [entitlementResolved, setEntitlementResolved] = useState(false);
 
   // RevenueCat billing APIs are unavailable in most iOS/Android simulators.
   // Skip SDK initialization there to avoid repetitive BILLING_UNAVAILABLE logs.
+  // Note: `Constants.isDevice` can be null in some runtimes; treat "not false" as a real device.
+  const isRealDevice = Constants.isDevice !== false;
   const isAvailable =
-    (Platform.OS === "ios" || Platform.OS === "android") &&
-    Constants.isDevice === true;
+    (Platform.OS === "ios" || Platform.OS === "android") && isRealDevice;
 
   const fetchCustomerInfo = useCallback(async () => {
     if (!isAvailable) {
@@ -67,8 +56,11 @@ export function useRevenueCat(): UseRevenueCatResult {
       return;
     }
     const { customerInfo: info, error: err } = await getCustomerInfo();
-    setCustomerInfo(info ?? null);
     setError(err ?? null);
+    if (!err) {
+      setCustomerInfo(info ?? null);
+      setEntitlementResolved(true);
+    }
   }, [isAvailable]);
 
   useEffect(() => {
@@ -106,9 +98,12 @@ export function useRevenueCat(): UseRevenueCatResult {
   const showPaywall = useCallback(async () => {
     if (!isAvailable) return;
     try {
-      await RevenueCatUI.presentPaywall({ displayCloseButton: true });
+      await RevenueCatUI.presentPaywallIfNeeded({
+        requiredEntitlementIdentifier: ENTITLEMENT_PRO,
+        displayCloseButton: true,
+      });
       await fetchCustomerInfo();
-    } catch (e) {
+    } catch {
       // User may have closed; refresh state anyway
       await fetchCustomerInfo();
     }
@@ -141,8 +136,11 @@ export function useRevenueCat(): UseRevenueCatResult {
       };
     setLoading(true);
     const { customerInfo: info, error: err } = await restorePurchases();
-    setCustomerInfo(info ?? null);
     setError(err ?? null);
+    if (!err) {
+      setCustomerInfo(info ?? null);
+      setEntitlementResolved(true);
+    }
     setLoading(false);
     return { success: Boolean(info && !err), error: err ?? undefined };
   }, [isAvailable]);
@@ -163,15 +161,11 @@ export function useRevenueCat(): UseRevenueCatResult {
     }
   }, [isAvailable, fetchCustomerInfo]);
 
-  const isReviewerPro = reviewerPro?.isReviewerPro ?? false;
-  const effectiveCustomerInfo: CustomerInfo | null = isReviewerPro
-    ? mockCustomerInfo("lifetime")
-    : customerInfo;
-  const isPro = isReviewerPro || hasProEntitlement(customerInfo);
+  const isPro = hasProEntitlement(customerInfo);
 
   return {
     isPro,
-    customerInfo: effectiveCustomerInfo,
+    customerInfo,
     loading,
     error,
     refresh,
@@ -180,5 +174,6 @@ export function useRevenueCat(): UseRevenueCatResult {
     restore,
     showCustomerCenter,
     isAvailable,
+    entitlementResolved,
   };
 }

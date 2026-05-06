@@ -28,7 +28,6 @@ import {
   MapModal,
   SettingsModal,
   SubscriptionManagementModal,
-  ReviewerPinModal,
   CameraTutorialListModal,
   DocumentsModal,
 } from "./src/components";
@@ -43,10 +42,6 @@ import {
   useOnboarding,
 } from "./src/contexts/OnboardingContext";
 import { OnboardingScreen } from "./src/components/onboarding";
-import {
-  ReviewerProProvider,
-  useReviewerPro,
-} from "./src/contexts/ReviewerProContext";
 import { evaluateSafety, getConditionBreakdown } from "./src/utils/goNoGo";
 import {
   getThresholdsForWeightClass,
@@ -69,11 +64,9 @@ import {
 } from "./src/utils/conversions";
 export default function App() {
   return (
-    <ReviewerProProvider>
-      <SettingsProvider>
-        <AppWithOnboardingAndPaywall />
-      </SettingsProvider>
-    </ReviewerProProvider>
+    <SettingsProvider>
+      <AppWithOnboardingAndPaywall />
+    </SettingsProvider>
   );
 }
 
@@ -123,7 +116,6 @@ function AppContent() {
   const [refreshing, setRefreshing] = useState(false);
   const [subscriptionManagementVisible, setSubscriptionManagementVisible] =
     useState(false);
-  const [reviewerPinModalVisible, setReviewerPinModalVisible] = useState(false);
   const [cameraTutorialListVisible, setCameraTutorialListVisible] =
     useState(false);
   const [cameraTutorialDetail, setCameraTutorialDetail] =
@@ -152,7 +144,6 @@ function AppContent() {
     refetch: refetchWeather,
   } = useWeather(coords?.latitude ?? null, coords?.longitude ?? null, env);
 
-  const reviewerPro = useReviewerPro();
   const {
     isPro,
     customerInfo,
@@ -161,6 +152,7 @@ function AppContent() {
     showPaywall,
     showCustomerCenter,
     isAvailable: revenueCatAvailable,
+    entitlementResolved,
     restore,
   } = useRevenueCat();
   const netInfo = useNetInfo();
@@ -168,7 +160,6 @@ function AppContent() {
     netInfo.isConnected === false || netInfo.isInternetReachable === false;
 
   const proPlanLabel = useMemo(() => {
-    if (reviewerPro?.isReviewerPro) return "Reviewer 24h";
     if (!customerInfo?.entitlements?.active) return "Pro";
     const ent = customerInfo.entitlements.active[ENTITLEMENT_PRO] as
       | { productIdentifier?: string }
@@ -177,7 +168,7 @@ function AppContent() {
     if (id === "lifetime") return "Lifetime";
     if (id === "monthly") return "Monthly";
     return "Pro";
-  }, [customerInfo, reviewerPro?.isReviewerPro]);
+  }, [customerInfo]);
 
   useEffect(() => {
     if (Constants.appOwnership === "expo") return;
@@ -487,11 +478,12 @@ function AppContent() {
                       color="#94a3b8"
                     />
                   </Pressable>
-                  {revenueCatAvailable && !isPro && (
+                  {revenueCatAvailable &&
+                    entitlementResolved &&
+                    !revenueCatLoading &&
+                    !isPro && (
                     <Pressable
                       onPress={showPaywall}
-                      onLongPress={() => setReviewerPinModalVisible(true)}
-                      delayLongPress={800}
                       className="ml-2 p-1 -m-1 rounded-lg active:opacity-70"
                       hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                     >
@@ -732,14 +724,6 @@ function AppContent() {
             onClose={() => setSubscriptionManagementVisible(false)}
             customerInfo={customerInfo}
             onOpenCustomerCenter={showCustomerCenter}
-            isReviewerPro={reviewerPro?.isReviewerPro ?? false}
-          />
-          <ReviewerPinModal
-            visible={reviewerPinModalVisible}
-            onClose={() => setReviewerPinModalVisible(false)}
-            onSuccess={async () => {
-              await reviewerPro?.unlockReviewerPro();
-            }}
           />
           <ConsentDialog onConsentCompleted={() => setConsentCompleted(true)} />
         </SafeAreaView>
