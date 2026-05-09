@@ -79,3 +79,6 @@ local.properties
 .kotlin/
 android/app/release/
 android/caches/
+android/daemon/
+android/kotlin-profile/
+android/.tmp/
