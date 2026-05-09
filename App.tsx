@@ -103,6 +103,7 @@ function AppWithOnboarding() {
 
 const LAST_FREE_REFRESH_KEY = "dronepal_lastFreeRefresh";
 const FREE_REFRESH_INTERVAL_MS = 12 * 60 * 60 * 1000;
+const DEV_FORCE_PRO_KEY = "dronepal_devForcePro";
 
 function AppContent() {
   const [infoMetric, setInfoMetric] = useState<string | null>(null);
@@ -120,6 +121,7 @@ function AppContent() {
     useState(false);
   const [cameraTutorialDetail, setCameraTutorialDetail] =
     useState<CameraTutorial | null>(null);
+  const [devForcePro, setDevForcePro] = useState(false);
 
   const {
     settings,
@@ -145,7 +147,7 @@ function AppContent() {
   } = useWeather(coords?.latitude ?? null, coords?.longitude ?? null, env);
 
   const {
-    isPro,
+    isPro: billingIsPro,
     customerInfo,
     loading: revenueCatLoading,
     error: revenueCatError,
@@ -158,6 +160,36 @@ function AppContent() {
   const netInfo = useNetInfo();
   const isOffline =
     netInfo.isConnected === false || netInfo.isInternetReachable === false;
+  const isDevelopment = __DEV__;
+  const isPro = billingIsPro || (isDevelopment && devForcePro);
+
+  useEffect(() => {
+    if (!isDevelopment) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem(DEV_FORCE_PRO_KEY);
+        if (!cancelled && raw != null) {
+          setDevForcePro(raw === "1");
+        }
+      } catch {
+        // Ignore local override load issues.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isDevelopment]);
+
+  const setDevForceProEnabled = useCallback(
+    (enabled: boolean) => {
+      setDevForcePro(enabled);
+      AsyncStorage.setItem(DEV_FORCE_PRO_KEY, enabled ? "1" : "0").catch(
+        () => undefined,
+      );
+    },
+    [setDevForcePro],
+  );
 
   const proPlanLabel = useMemo(() => {
     if (!customerInfo?.entitlements?.active) return "Pro";
@@ -465,7 +497,11 @@ function AppContent() {
                     className="p-2 -m-2 mr-2 rounded-lg active:opacity-70"
                     hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   >
-                    <Ionicons name="folder-outline" size={22} color="#94a3b8" />
+                    <Ionicons
+                      name="document-text-outline"
+                      size={22}
+                      color="#94a3b8"
+                    />
                   </Pressable>
                   <Pressable
                     onPress={() => setSettingsModalVisible(true)}
@@ -482,18 +518,18 @@ function AppContent() {
                     entitlementResolved &&
                     !revenueCatLoading &&
                     !isPro && (
-                    <Pressable
-                      onPress={showPaywall}
-                      className="ml-2 p-1 -m-1 rounded-lg active:opacity-70"
-                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                    >
-                      <Image
-                        source={require("./assets/pro.png")}
-                        style={{ width: 27, height: 27 }}
-                        resizeMode="contain"
-                      />
-                    </Pressable>
-                  )}
+                      <Pressable
+                        onPress={showPaywall}
+                        className="ml-2 p-1 -m-1 rounded-lg active:opacity-70"
+                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                      >
+                        <Image
+                          source={require("./assets/pro.png")}
+                          style={{ width: 27, height: 27 }}
+                          resizeMode="contain"
+                        />
+                      </Pressable>
+                    )}
                 </View>
               )}
               <LocationPickerModal
@@ -714,6 +750,9 @@ function AppContent() {
             setTimeFormat={setTimeFormat}
             setCompassEnabled={setCompassEnabled}
             setDroneWeightClass={setDroneWeightClass}
+            showDevProToggle={isDevelopment}
+            devProEnabled={devForcePro}
+            setDevProEnabled={setDevForceProEnabled}
           />
           <DocumentsModal
             visible={documentsModalVisible}

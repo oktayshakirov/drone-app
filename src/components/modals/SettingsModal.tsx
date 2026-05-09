@@ -42,6 +42,9 @@ interface SettingsModalProps {
   setTimeFormat: (t: TimeFormat) => void;
   setCompassEnabled: (enabled: boolean) => void;
   setDroneWeightClass: (id: WeightClassId) => void;
+  showDevProToggle?: boolean;
+  devProEnabled?: boolean;
+  setDevProEnabled?: (enabled: boolean) => void;
 }
 
 export function SettingsModal({
@@ -53,6 +56,9 @@ export function SettingsModal({
   setTimeFormat,
   setCompassEnabled,
   setDroneWeightClass,
+  showDevProToggle = false,
+  devProEnabled = false,
+  setDevProEnabled,
 }: SettingsModalProps) {
   if (!visible) return null;
 
@@ -135,6 +141,17 @@ export function SettingsModal({
                 onSelect={setCompassEnabled}
                 getKey={(id) => (id ? "on" : "off")}
               />
+              {showDevProToggle && setDevProEnabled ? (
+                <OptionList
+                  layout="horizontal"
+                  label="Pro plan (dev)"
+                  iconName="flask-outline"
+                  options={COMPASS_OPTIONS}
+                  value={devProEnabled}
+                  onSelect={setDevProEnabled}
+                  getKey={(id) => (id ? "on" : "off")}
+                />
+              ) : null}
             </View>
           </ScrollView>
         </Pressable>

@@ -22,6 +22,7 @@ interface DocumentsModalProps {
 }
 
 type EditableDocument = Omit<PilotDocument, "createdAt" | "updatedAt">;
+const DOCUMENT_IMAGE_ASPECT_RATIO = 16 / 9;
 
 export function DocumentsModal({ visible, onClose }: DocumentsModalProps) {
   const {
@@ -121,7 +122,8 @@ export function DocumentsModal({ visible, onClose }: DocumentsModalProps) {
     const hasCoreData =
       Boolean(document.imageUri) ||
       document.additionalFields.some(
-        (field) => field.name.trim().length > 0 || field.value.trim().length > 0,
+        (field) =>
+          field.name.trim().length > 0 || field.value.trim().length > 0,
       );
     return hasCoreData;
   };
@@ -174,7 +176,7 @@ export function DocumentsModal({ visible, onClose }: DocumentsModalProps) {
         const result = await ImagePicker.launchCameraAsync({
           mediaTypes: ["images"],
           quality: 0.8,
-          allowsEditing: true,
+          allowsEditing: false,
         });
         if (!result.canceled && result.assets[0]?.uri) {
           updateField("imageUri", result.assets[0].uri);
@@ -191,7 +193,7 @@ export function DocumentsModal({ visible, onClose }: DocumentsModalProps) {
         const result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ["images"],
           quality: 0.8,
-          allowsEditing: true,
+          allowsEditing: false,
         });
         if (!result.canceled && result.assets[0]?.uri) {
           updateField("imageUri", result.assets[0].uri);
@@ -256,7 +258,7 @@ export function DocumentsModal({ visible, onClose }: DocumentsModalProps) {
     >
       <View
         className="w-full overflow-hidden rounded-lg border border-border mb-2.5"
-        style={{ aspectRatio: 16 / 9 }}
+        style={{ aspectRatio: DOCUMENT_IMAGE_ASPECT_RATIO }}
       >
         {document.imageUri ? (
           <Image
@@ -293,7 +295,7 @@ export function DocumentsModal({ visible, onClose }: DocumentsModalProps) {
     >
       <View
         className="w-full overflow-hidden rounded-lg border border-dashed border-border mb-2.5 items-center justify-center bg-card"
-        style={{ aspectRatio: 16 / 9 }}
+        style={{ aspectRatio: DOCUMENT_IMAGE_ASPECT_RATIO }}
       >
         <Ionicons name="add" size={24} color="#94a3b8" />
       </View>
@@ -328,7 +330,11 @@ export function DocumentsModal({ visible, onClose }: DocumentsModalProps) {
           <View className="w-12 h-1 bg-slate-600 rounded-full self-center mt-3 mb-1" />
           <View className="flex-row items-center justify-between px-4 pt-2 pb-3">
             <View className="flex-row items-center gap-2">
-              <Ionicons name="folder-outline" size={18} color="#94a3b8" />
+              <Ionicons
+                name="document-text-outline"
+                size={18}
+                color="#94a3b8"
+              />
               <Text className="text-white text-lg font-semibold">
                 Documents
               </Text>
@@ -359,7 +365,10 @@ export function DocumentsModal({ visible, onClose }: DocumentsModalProps) {
               <Text className="text-slate-400 text-xs mb-1">Image</Text>
               <View className="rounded-lg border border-border bg-[#141414] p-3 mb-3">
                 {editingDocument.imageUri ? (
-                  <View className="relative">
+                  <View
+                    className="relative overflow-hidden rounded-lg border border-border"
+                    style={{ aspectRatio: DOCUMENT_IMAGE_ASPECT_RATIO }}
+                  >
                     <Pressable
                       onPress={() =>
                         setQuickShowUri(editingDocument.imageUri ?? null)
@@ -367,7 +376,7 @@ export function DocumentsModal({ visible, onClose }: DocumentsModalProps) {
                     >
                       <Image
                         source={{ uri: editingDocument.imageUri }}
-                        style={{ width: "100%", height: 160, borderRadius: 10 }}
+                        style={{ width: "100%", height: "100%" }}
                         resizeMode="cover"
                       />
                     </Pressable>
@@ -386,7 +395,10 @@ export function DocumentsModal({ visible, onClose }: DocumentsModalProps) {
                     </Pressable>
                   </View>
                 ) : (
-                  <View className="h-28 rounded-lg border border-dashed border-border items-center justify-center">
+                  <View
+                    className="rounded-lg border border-dashed border-border items-center justify-center"
+                    style={{ aspectRatio: DOCUMENT_IMAGE_ASPECT_RATIO }}
+                  >
                     <Ionicons name="image-outline" size={24} color="#64748b" />
                     <Text className="text-slate-400 text-xs mt-1">
                       No image attached
@@ -500,26 +512,40 @@ export function DocumentsModal({ visible, onClose }: DocumentsModalProps) {
               <Text className="text-slate-400 text-xs mb-1">Image</Text>
               <View className="rounded-lg border border-border bg-[#141414] p-3 mb-3">
                 {previewDocument.imageUri ? (
-                  <View className="relative">
+                  <View
+                    className="relative overflow-hidden rounded-lg border border-border"
+                    style={{ aspectRatio: DOCUMENT_IMAGE_ASPECT_RATIO }}
+                  >
                     <Pressable
-                      onPress={() => setQuickShowUri(previewDocument.imageUri ?? null)}
+                      onPress={() =>
+                        setQuickShowUri(previewDocument.imageUri ?? null)
+                      }
                     >
                       <Image
                         source={{ uri: previewDocument.imageUri }}
-                        style={{ width: "100%", height: 160, borderRadius: 10 }}
+                        style={{ width: "100%", height: "100%" }}
                         resizeMode="cover"
                       />
                     </Pressable>
                     <Pressable
-                      onPress={() => setQuickShowUri(previewDocument.imageUri ?? null)}
+                      onPress={() =>
+                        setQuickShowUri(previewDocument.imageUri ?? null)
+                      }
                       className="absolute right-2 top-2 rounded-full bg-black/60 p-2 active:opacity-80"
                       accessibilityLabel="Open image full screen"
                     >
-                      <Ionicons name="expand-outline" size={16} color="#ffffff" />
+                      <Ionicons
+                        name="expand-outline"
+                        size={16}
+                        color="#ffffff"
+                      />
                     </Pressable>
                   </View>
                 ) : (
-                  <View className="h-28 rounded-lg border border-dashed border-border items-center justify-center">
+                  <View
+                    className="rounded-lg border border-dashed border-border items-center justify-center"
+                    style={{ aspectRatio: DOCUMENT_IMAGE_ASPECT_RATIO }}
+                  >
                     <Ionicons name="image-outline" size={24} color="#64748b" />
                     <Text className="text-slate-400 text-xs mt-1">
                       No image attached
@@ -547,7 +573,9 @@ export function DocumentsModal({ visible, onClose }: DocumentsModalProps) {
                 ))
               ) : (
                 <View className="mb-2 rounded-lg border border-border bg-[#141414] p-3">
-                  <Text className="text-slate-400 text-sm">No additional fields</Text>
+                  <Text className="text-slate-400 text-sm">
+                    No additional fields
+                  </Text>
                 </View>
               )}
 
