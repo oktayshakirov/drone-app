@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import {
   Modal,
   View,
@@ -20,12 +26,19 @@ import {
   MAP_AIRPORT_LEGEND_ENTRIES,
   airportTypeToLegendKey,
   defaultAirportLegendVisibility,
+  getAirportCircleRadiusM,
+  getAirportPinColor,
+  getAirportTypeOverlapPriority,
   type MapAirportLegendKey,
 } from "../../constants/airportColors";
+import type { Airport } from "../../api/airports";
 import type { MapType } from "../../types/settings";
 import {
   MapSearchBar,
   NoFlyZoneMapView,
+  MAX_MAP_RENDERED_AIRPORTS,
+  dedupeOverlappingAirportsKeepLargest,
+  distanceKm,
   isValidMapCoordinate,
   NOMINATIM_URL,
   SEARCH_DEBOUNCE_MS,
@@ -54,6 +67,86 @@ interface MapModalProps {
   isPro?: boolean;
   showPaywall?: () => Promise<void>;
   revenueCatAvailable?: boolean;
+}
+
+type ZoneTapStatus =
+  | {
+      kind: "none";
+      color: string;
+      message: string;
+    }
+  | {
+      kind: "allowed";
+      color: string;
+      message: string;
+    }
+  | {
+      kind: "prohibited";
+      color: string;
+      message: string;
+    };
+
+function distanceMeters(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const R = 6371000;
+  const toRad = (v: number) => (v * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function pickBestAirport(
+  airports: Airport[],
+  lat: number,
+  lon: number,
+): Airport | null {
+  if (airports.length === 0) return null;
+  return [...airports].sort((a, b) => {
+    const pA = getAirportTypeOverlapPriority(a.type);
+    const pB = getAirportTypeOverlapPriority(b.type);
+    if (pA !== pB) return pB - pA;
+    const dA = distanceMeters(lat, lon, a.lat, a.lon);
+    const dB = distanceMeters(lat, lon, b.lat, b.lon);
+    return dA - dB;
+  })[0];
+}
+
+function evaluateTappedZone(
+  lat: number,
+  lon: number,
+  airports: Airport[],
+): ZoneTapStatus {
+  const insideZone = airports.filter((a) => {
+    const dist = distanceMeters(lat, lon, a.lat, a.lon);
+    return dist <= getAirportCircleRadiusM(a.type);
+  });
+  const zoneAirport = pickBestAirport(insideZone, lat, lon);
+  if (zoneAirport) {
+    const isStrictProhibitedAirport =
+      zoneAirport.type === "large_airport" ||
+      zoneAirport.type === "medium_airport";
+    return {
+      kind: isStrictProhibitedAirport ? "prohibited" : "allowed",
+      color: getAirportPinColor(zoneAirport.type),
+      message: isStrictProhibitedAirport
+        ? "Flight prohibited"
+        : "Flight allowed under conditions\nSubject to your pilot license privileges and the laws of the country you are flying in.",
+    };
+  }
+
+  return {
+    kind: "none",
+    color: "#94a3b8",
+    message: "No geographical zones known",
+  };
 }
 
 export function MapModal({
@@ -141,7 +234,8 @@ function MapModalContent({
     userLng: userLngResolved,
   });
 
-  const [airportTypesSheetVisible, setAirportTypesSheetVisible] = useState(false);
+  const [airportTypesSheetVisible, setAirportTypesSheetVisible] =
+    useState(false);
   const [airportLegendVisibility, setAirportLegendVisibility] = useState<
     Record<MapAirportLegendKey, boolean>
   >(() => defaultAirportLegendVisibility());
@@ -152,6 +246,24 @@ function MapModalContent({
       return airportLegendVisibility[key] !== false;
     });
   }, [airports, airportLegendVisibility]);
+  const airportsForStatus = useMemo(() => {
+    const deduped = dedupeOverlappingAirportsKeepLargest(
+      airportsForMap.filter((a) => isValidMapCoordinate(a.lat, a.lon)),
+    );
+    if (deduped.length <= MAX_MAP_RENDERED_AIRPORTS) return deduped;
+    return [...deduped]
+      .sort(
+        (a, b) =>
+          distanceKm(a.lat, a.lon, mapViewCenter.lat, mapViewCenter.lng) -
+          distanceKm(b.lat, b.lon, mapViewCenter.lat, mapViewCenter.lng),
+      )
+      .slice(0, MAX_MAP_RENDERED_AIRPORTS);
+  }, [airportsForMap, mapViewCenter.lat, mapViewCenter.lng]);
+  const [selectedPoint, setSelectedPoint] = useState<{
+    latitude: number;
+    longitude: number;
+    status: ZoneTapStatus;
+  } | null>(null);
 
   const runSearch = useCallback(async (q: string) => {
     const trimmed = q.trim();
@@ -211,10 +323,29 @@ function MapModalContent({
       setMapTypeMenuVisible(false);
       setAirportTypesSheetVisible(false);
       setAirportLegendVisibility(defaultAirportLegendVisibility());
+      setSelectedPoint(null);
       if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
       searchDebounceRef.current = null;
     }
   }, [visible]);
+
+  const handleMapPress = useCallback(
+    ({
+      latitude: lat,
+      longitude: lon,
+    }: {
+      latitude: number;
+      longitude: number;
+    }) => {
+      const status = evaluateTappedZone(lat, lon, airportsForStatus);
+      setSelectedPoint({
+        latitude: lat,
+        longitude: lon,
+        status,
+      });
+    },
+    [airportsForStatus],
+  );
 
   const handleCenterLocation = useCallback(() => {
     if (!isValidMapCoordinate(latitude, longitude)) return;
@@ -310,7 +441,49 @@ function MapModalContent({
             onRegionChangeStart={onRegionChangeStart}
             onRegionChangeComplete={onRegionChangeComplete}
             mapType={mapType}
+            onMapPress={handleMapPress}
+            selectedPoint={
+              selectedPoint
+                ? {
+                    latitude: selectedPoint.latitude,
+                    longitude: selectedPoint.longitude,
+                    color: selectedPoint.status.color,
+                  }
+                : null
+            }
           />
+          {selectedPoint ? (
+            <View
+              style={[
+                styles.zoneStatusBar,
+                selectedPoint.status.kind === "prohibited"
+                  ? styles.zoneStatusBarProhibited
+                  : selectedPoint.status.kind === "allowed"
+                    ? styles.zoneStatusBarAllowed
+                    : styles.zoneStatusBarNone,
+              ]}
+            >
+              <View
+                style={[
+                  styles.zoneStatusDot,
+                  { backgroundColor: selectedPoint.status.color },
+                ]}
+              />
+              <View style={styles.zoneStatusTextWrap}>
+                <Text style={styles.zoneStatusMainText}>
+                  {selectedPoint.status.message.split("\n")[0]}
+                </Text>
+                {selectedPoint.status.message.includes("\n") ? (
+                  <Text style={styles.zoneStatusSubText}>
+                    {selectedPoint.status.message
+                      .split("\n")
+                      .slice(1)
+                      .join(" ")}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+          ) : null}
 
           {mapTypeMenuVisible && (
             <Pressable
@@ -339,10 +512,7 @@ function MapModalContent({
                 ]}
               >
                 <View
-                  style={[
-                    styles.legendDot,
-                    { backgroundColor: entry.color },
-                  ]}
+                  style={[styles.legendDot, { backgroundColor: entry.color }]}
                 />
                 <Text style={styles.legendLabel}>{entry.label}</Text>
               </View>
@@ -377,7 +547,9 @@ function MapModalContent({
                           { backgroundColor: entry.color },
                         ]}
                       />
-                      <Text style={styles.airportTypesRowLabel}>{entry.label}</Text>
+                      <Text style={styles.airportTypesRowLabel}>
+                        {entry.label}
+                      </Text>
                     </View>
                     <Switch
                       value={airportLegendVisibility[entry.key]}
@@ -389,7 +561,9 @@ function MapModalContent({
                       }
                       trackColor={{ false: "#334155", true: "#475569" }}
                       thumbColor={
-                        airportLegendVisibility[entry.key] ? "#e2e8f0" : "#64748b"
+                        airportLegendVisibility[entry.key]
+                          ? "#e2e8f0"
+                          : "#64748b"
                       }
                       ios_backgroundColor="#334155"
                       accessibilityLabel={`Show ${entry.label}`}
@@ -670,6 +844,51 @@ const styles = StyleSheet.create({
     borderColor: "rgba(148,163,184,0.3)",
     alignItems: "center",
     justifyContent: "center",
+  },
+  zoneStatusBar: {
+    position: "absolute",
+    left: 12,
+    right: 68,
+    bottom: 16,
+    zIndex: 10,
+    minHeight: 38,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  zoneStatusBarProhibited: {
+    backgroundColor: "rgba(127,29,29,0.85)",
+    borderColor: "rgba(239,68,68,0.6)",
+  },
+  zoneStatusBarAllowed: {
+    backgroundColor: "rgba(30,41,59,0.85)",
+    borderColor: "rgba(148,163,184,0.45)",
+  },
+  zoneStatusBarNone: {
+    backgroundColor: "rgba(15,23,42,0.8)",
+    borderColor: "rgba(100,116,139,0.5)",
+  },
+  zoneStatusDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+  },
+  zoneStatusTextWrap: {
+    flex: 1,
+  },
+  zoneStatusMainText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#f8fafc",
+  },
+  zoneStatusSubText: {
+    marginTop: 2,
+    lineHeight: 14,
+    fontSize: 10,
+    color: "#e2e8f0",
   },
   placeholder: {
     flex: 1,

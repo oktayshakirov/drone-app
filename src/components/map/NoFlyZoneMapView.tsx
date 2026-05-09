@@ -54,6 +54,12 @@ interface NoFlyZoneMapViewProps {
     longitude: number;
   }) => void;
   mapType: MapType;
+  onMapPress?: (coordinate: { latitude: number; longitude: number }) => void;
+  selectedPoint?: {
+    latitude: number;
+    longitude: number;
+    color: string;
+  } | null;
 }
 
 function NoFlyZoneMapViewInner({
@@ -67,6 +73,8 @@ function NoFlyZoneMapViewInner({
   onRegionChangeStart,
   onRegionChangeComplete,
   mapType,
+  onMapPress,
+  selectedPoint,
 }: NoFlyZoneMapViewProps) {
   /**
    * ClusteredMapView + Circle/Polygon children caused AIRMap insertReactSubview crashes
@@ -149,6 +157,11 @@ function NoFlyZoneMapViewInner({
         toolbarEnabled={false}
         onRegionChangeStart={onRegionChangeStart}
         onRegionChangeComplete={onRegionChangeComplete}
+        onPress={(event) => {
+          const c = event.nativeEvent.coordinate;
+          if (!c) return;
+          onMapPress?.({ latitude: c.latitude, longitude: c.longitude });
+        }}
       >
         <Marker
           coordinate={{ latitude, longitude }}
@@ -223,6 +236,20 @@ function NoFlyZoneMapViewInner({
             </Marker>
           ),
         )}
+        {selectedPoint ? (
+          <Marker
+            key={`tap-${selectedPoint.latitude.toFixed(6)}-${selectedPoint.longitude.toFixed(6)}-${selectedPoint.color}`}
+            coordinate={{
+              latitude: selectedPoint.latitude,
+              longitude: selectedPoint.longitude,
+            }}
+            pinColor={selectedPoint.color}
+            title="Selected point"
+            description="Tap status point"
+            tracksViewChanges
+            zIndex={1000}
+          />
+        ) : null}
       </MapView>
     </View>
   );
