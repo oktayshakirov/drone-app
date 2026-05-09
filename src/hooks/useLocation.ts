@@ -12,6 +12,8 @@ export function useLocation(): {
   devicePlaceName: string | null;
   error: string | null;
   loading: boolean;
+  /** True after the OS location permission prompt has returned (granted or denied). Use to sequence other modals (e.g. ads consent). */
+  foregroundPermissionResolved: boolean;
   setPickedLocation: (location: { latitude: number; longitude: number; placeName: string | null }) => void;
   clearPickedLocation: () => void;
 } {
@@ -21,6 +23,8 @@ export function useLocation(): {
   const [pickedPlaceName, setPickedPlaceName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [foregroundPermissionResolved, setForegroundPermissionResolved] =
+    useState(false);
 
   const coords = pickedCoords ?? deviceCoords;
   const placeName = pickedPlaceName ?? devicePlaceName;
@@ -43,7 +47,13 @@ export function useLocation(): {
 
     async function requestAndGetLocation() {
       try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
+        let status: Location.PermissionStatus;
+        try {
+          const result = await Location.requestForegroundPermissionsAsync();
+          status = result.status;
+        } finally {
+          if (!cancelled) setForegroundPermissionResolved(true);
+        }
         if (cancelled) return;
         if (status !== 'granted') {
           setError('Location permission denied');
@@ -86,6 +96,7 @@ export function useLocation(): {
     devicePlaceName,
     error,
     loading,
+    foregroundPermissionResolved,
     setPickedLocation,
     clearPickedLocation,
   };

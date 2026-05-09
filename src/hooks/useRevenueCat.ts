@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Platform } from "react-native";
 import Constants from "expo-constants";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { CustomerInfo } from "react-native-purchases";
 import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 import {
@@ -11,6 +12,8 @@ import {
   type RevenueCatError,
 } from "../services/revenueCat";
 import { ENTITLEMENT_PRO } from "../constants/revenueCat";
+
+const RC_PRO_CACHE_KEY = "@dronepal/revenuecat_pro_cache_v1";
 
 export interface UseRevenueCatResult {
   /** User has "Drone Pal Pro" entitlement. */
@@ -33,12 +36,16 @@ export interface UseRevenueCatResult {
   showCustomerCenter: () => Promise<void>;
   /** True when RevenueCat is configured and available on this platform. */
   isAvailable: boolean;
-  /** True after entitlement state has been fetched successfully at least once. */
+  /**
+   * True once we know whether to treat the user as Pro: from cache, after a
+   * customer-info fetch (success or failure), or after configure failure.
+   */
   entitlementResolved: boolean;
 }
 
 export function useRevenueCat(): UseRevenueCatResult {
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
+  const [cachedIsPro, setCachedIsPro] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<RevenueCatError | null>(null);
   const [entitlementResolved, setEntitlementResolved] = useState(false);
@@ -50,6 +57,33 @@ export function useRevenueCat(): UseRevenueCatResult {
   const isAvailable =
     (Platform.OS === "ios" || Platform.OS === "android") && isRealDevice;
 
+  const persistProCache = useCallback(async (isPro: boolean) => {
+    try {
+      await AsyncStorage.setItem(RC_PRO_CACHE_KEY, isPro ? "1" : "0");
+    } catch {
+      // Ignore cache write failures.
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadCachedEntitlement() {
+      try {
+        const raw = await AsyncStorage.getItem(RC_PRO_CACHE_KEY);
+        if (cancelled || raw == null) return;
+        const cached = raw === "1";
+        setCachedIsPro(cached);
+        setEntitlementResolved(true);
+      } catch {
+        // Ignore cache read failures.
+      }
+    }
+    loadCachedEntitlement();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const fetchCustomerInfo = useCallback(async () => {
     if (!isAvailable) {
       setLoading(false);
@@ -59,9 +93,14 @@ export function useRevenueCat(): UseRevenueCatResult {
     setError(err ?? null);
     if (!err) {
       setCustomerInfo(info ?? null);
-      setEntitlementResolved(true);
+      const hasPro = hasProEntitlement(info ?? null);
+      setCachedIsPro(hasPro);
+      persistProCache(hasPro);
     }
-  }, [isAvailable]);
+    // Always mark resolved after an attempt so UI can treat unknown-as-free for paywalls/ads
+    // instead of staying stuck while Pro users wait for a retry.
+    setEntitlementResolved(true);
+  }, [isAvailable, persistProCache]);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,6 +114,7 @@ export function useRevenueCat(): UseRevenueCatResult {
       if (cancelled) return;
       if (!ok && configError) {
         setError(configError);
+        setEntitlementResolved(true);
         setLoading(false);
         return;
       }
@@ -139,11 +179,14 @@ export function useRevenueCat(): UseRevenueCatResult {
     setError(err ?? null);
     if (!err) {
       setCustomerInfo(info ?? null);
-      setEntitlementResolved(true);
+      const hasPro = hasProEntitlement(info ?? null);
+      setCachedIsPro(hasPro);
+      persistProCache(hasPro);
     }
+    setEntitlementResolved(true);
     setLoading(false);
     return { success: Boolean(info && !err), error: err ?? undefined };
-  }, [isAvailable]);
+  }, [isAvailable, persistProCache]);
 
   const showCustomerCenter = useCallback(async () => {
     if (!isAvailable) return;
@@ -161,7 +204,7 @@ export function useRevenueCat(): UseRevenueCatResult {
     }
   }, [isAvailable, fetchCustomerInfo]);
 
-  const isPro = hasProEntitlement(customerInfo);
+  const isPro = hasProEntitlement(customerInfo) || cachedIsPro;
 
   return {
     isPro,

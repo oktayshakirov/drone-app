@@ -65,17 +65,10 @@ import {
 export default function App() {
   return (
     <SettingsProvider>
-      <AppWithOnboardingAndPaywall />
+      <OnboardingProvider>
+        <AppWithOnboarding />
+      </OnboardingProvider>
     </SettingsProvider>
-  );
-}
-
-function AppWithOnboardingAndPaywall() {
-  const { showPaywall } = useRevenueCat();
-  return (
-    <OnboardingProvider onComplete={() => showPaywall()}>
-      <AppWithOnboarding />
-    </OnboardingProvider>
   );
 }
 
@@ -111,8 +104,10 @@ function AppContent() {
   const [mapModalVisible, setMapModalVisible] = useState(false);
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
   const [documentsModalVisible, setDocumentsModalVisible] = useState(false);
-  const [AdBannerComponent, setAdBannerComponent] =
-    useState<React.ComponentType<{ isPro: boolean }> | null>(null);
+  const [AdBannerComponent, setAdBannerComponent] = useState<React.ComponentType<{
+    isPro: boolean;
+    deferUntilBillingKnown?: boolean;
+  }> | null>(null);
   const [consentCompleted, setConsentCompleted] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [subscriptionManagementVisible, setSubscriptionManagementVisible] =
@@ -136,6 +131,7 @@ function AppContent() {
     placeName,
     devicePlaceName,
     loading: locationLoading,
+    foregroundPermissionResolved,
     setPickedLocation,
     clearPickedLocation,
   } = useLocation();
@@ -162,6 +158,12 @@ function AppContent() {
     netInfo.isConnected === false || netInfo.isInternetReachable === false;
   const isDevelopment = __DEV__;
   const isPro = billingIsPro || (isDevelopment && devForcePro);
+
+  /** Only enforce free-tier limits once RevenueCat (or cache) has decided Pro vs not. */
+  const requireProForGatedContent = useMemo(
+    () => entitlementResolved && revenueCatAvailable && !isPro,
+    [entitlementResolved, revenueCatAvailable, isPro],
+  );
 
   useEffect(() => {
     if (!isDevelopment) return;
@@ -252,7 +254,7 @@ function AppContent() {
   const handlePullToRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      if (!isPro && revenueCatAvailable) {
+      if (requireProForGatedContent) {
         await showPaywall();
       } else {
         await refetchWeather();
@@ -260,7 +262,7 @@ function AppContent() {
     } finally {
       setRefreshing(false);
     }
-  }, [isPro, revenueCatAvailable, showPaywall, refetchWeather]);
+  }, [requireProForGatedContent, showPaywall, refetchWeather]);
 
   const heroMinMax = useMemo(() => {
     if (!weather?.hourly?.length)
@@ -476,9 +478,9 @@ function AppContent() {
                   <Pressable
                     onPress={() => {
                       if (isInitialLoading) return;
-                      if (!isPro && revenueCatAvailable) {
+                      if (requireProForGatedContent) {
                         showPaywall();
-                      } else if (isPro || !revenueCatAvailable) {
+                      } else {
                         setLocationPickerVisible(true);
                       }
                     }}
@@ -559,7 +561,7 @@ function AppContent() {
                       isLoading={isInitialLoading}
                       onPress={() => {
                         if (isInitialLoading) return;
-                        if (!isPro && revenueCatAvailable) {
+                        if (requireProForGatedContent) {
                           showPaywall();
                         } else {
                           setInfoMetric("flightConditions");
@@ -582,7 +584,7 @@ function AppContent() {
                       shape="wide"
                       onPress={(key) => {
                         if (isInitialLoading) return;
-                        if (!isPro && revenueCatAvailable) {
+                        if (requireProForGatedContent) {
                           showPaywall();
                         } else {
                           setInfoMetric(key);
@@ -639,7 +641,7 @@ function AppContent() {
                         setCameraTutorialListVisible(true);
                         return;
                       }
-                      if (!isPro && revenueCatAvailable) {
+                      if (requireProForGatedContent) {
                         showPaywall();
                         return;
                       }
@@ -684,6 +686,9 @@ function AppContent() {
               <AdBannerComponent
                 key={consentCompleted ? "with-consent" : "pending"}
                 isPro={isPro}
+                deferUntilBillingKnown={
+                  revenueCatAvailable && revenueCatLoading && !isPro
+                }
               />
             )}
           </View>
@@ -697,7 +702,10 @@ function AppContent() {
               setCameraTutorialListVisible(false);
             }}
             onSelectTutorial={(tutorial) => {
-              if (tutorial.access === "pro" && !isPro && revenueCatAvailable) {
+              if (
+                tutorial.access === "pro" &&
+                requireProForGatedContent
+              ) {
                 showPaywall();
                 return;
               }
@@ -739,6 +747,7 @@ function AppContent() {
               isPro={isPro}
               showPaywall={showPaywall}
               revenueCatAvailable={revenueCatAvailable}
+              entitlementResolved={entitlementResolved}
             />
           )}
           <SettingsModal
@@ -764,7 +773,9 @@ function AppContent() {
             customerInfo={customerInfo}
             onOpenCustomerCenter={showCustomerCenter}
           />
-          <ConsentDialog onConsentCompleted={() => setConsentCompleted(true)} />
+          {foregroundPermissionResolved ? (
+            <ConsentDialog onConsentCompleted={() => setConsentCompleted(true)} />
+          ) : null}
         </SafeAreaView>
       </View>
     </SafeAreaProvider>
