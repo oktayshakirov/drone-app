@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   View,
   Text,
-  Image,
   ScrollView,
   ActivityIndicator,
   StyleSheet,
@@ -104,10 +103,8 @@ function AppContent() {
   const [mapModalVisible, setMapModalVisible] = useState(false);
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
   const [documentsModalVisible, setDocumentsModalVisible] = useState(false);
-  const [AdBannerComponent, setAdBannerComponent] = useState<React.ComponentType<{
-    isPro: boolean;
-    deferUntilBillingKnown?: boolean;
-  }> | null>(null);
+  const [AdBannerComponent, setAdBannerComponent] =
+    useState<React.ComponentType<{ isPro: boolean }> | null>(null);
   const [consentCompleted, setConsentCompleted] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [subscriptionManagementVisible, setSubscriptionManagementVisible] =
@@ -145,12 +142,9 @@ function AppContent() {
   const {
     isPro: billingIsPro,
     customerInfo,
-    loading: revenueCatLoading,
-    error: revenueCatError,
     showPaywall,
-    showCustomerCenter,
+    openStoreSubscriptions,
     isAvailable: revenueCatAvailable,
-    entitlementResolved,
     restore,
   } = useRevenueCat();
   const netInfo = useNetInfo();
@@ -158,12 +152,6 @@ function AppContent() {
     netInfo.isConnected === false || netInfo.isInternetReachable === false;
   const isDevelopment = __DEV__;
   const isPro = billingIsPro || (isDevelopment && devForcePro);
-
-  /** Only enforce free-tier limits once RevenueCat (or cache) has decided Pro vs not. */
-  const requireProForGatedContent = useMemo(
-    () => entitlementResolved && revenueCatAvailable && !isPro,
-    [entitlementResolved, revenueCatAvailable, isPro],
-  );
 
   useEffect(() => {
     if (!isDevelopment) return;
@@ -254,7 +242,7 @@ function AppContent() {
   const handlePullToRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      if (requireProForGatedContent) {
+      if (!isPro && revenueCatAvailable) {
         await showPaywall();
       } else {
         await refetchWeather();
@@ -262,7 +250,7 @@ function AppContent() {
     } finally {
       setRefreshing(false);
     }
-  }, [requireProForGatedContent, showPaywall, refetchWeather]);
+  }, [isPro, revenueCatAvailable, showPaywall, refetchWeather]);
 
   const heroMinMax = useMemo(() => {
     if (!weather?.hourly?.length)
@@ -478,9 +466,9 @@ function AppContent() {
                   <Pressable
                     onPress={() => {
                       if (isInitialLoading) return;
-                      if (requireProForGatedContent) {
+                      if (!isPro && revenueCatAvailable) {
                         showPaywall();
-                      } else {
+                      } else if (isPro || !revenueCatAvailable) {
                         setLocationPickerVisible(true);
                       }
                     }}
@@ -516,22 +504,6 @@ function AppContent() {
                       color="#94a3b8"
                     />
                   </Pressable>
-                  {revenueCatAvailable &&
-                    entitlementResolved &&
-                    !revenueCatLoading &&
-                    !isPro && (
-                      <Pressable
-                        onPress={showPaywall}
-                        className="ml-2 p-1 -m-1 rounded-lg active:opacity-70"
-                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                      >
-                        <Image
-                          source={require("./assets/pro.png")}
-                          style={{ width: 27, height: 27 }}
-                          resizeMode="contain"
-                        />
-                      </Pressable>
-                    )}
                 </View>
               )}
               <LocationPickerModal
@@ -561,7 +533,7 @@ function AppContent() {
                       isLoading={isInitialLoading}
                       onPress={() => {
                         if (isInitialLoading) return;
-                        if (requireProForGatedContent) {
+                        if (!isPro && revenueCatAvailable) {
                           showPaywall();
                         } else {
                           setInfoMetric("flightConditions");
@@ -584,7 +556,7 @@ function AppContent() {
                       shape="wide"
                       onPress={(key) => {
                         if (isInitialLoading) return;
-                        if (requireProForGatedContent) {
+                        if (!isPro && revenueCatAvailable) {
                           showPaywall();
                         } else {
                           setInfoMetric(key);
@@ -641,7 +613,7 @@ function AppContent() {
                         setCameraTutorialListVisible(true);
                         return;
                       }
-                      if (requireProForGatedContent) {
+                      if (!isPro && revenueCatAvailable) {
                         showPaywall();
                         return;
                       }
@@ -686,9 +658,6 @@ function AppContent() {
               <AdBannerComponent
                 key={consentCompleted ? "with-consent" : "pending"}
                 isPro={isPro}
-                deferUntilBillingKnown={
-                  revenueCatAvailable && revenueCatLoading && !isPro
-                }
               />
             )}
           </View>
@@ -702,10 +671,7 @@ function AppContent() {
               setCameraTutorialListVisible(false);
             }}
             onSelectTutorial={(tutorial) => {
-              if (
-                tutorial.access === "pro" &&
-                requireProForGatedContent
-              ) {
+              if (tutorial.access === "pro" && !isPro && revenueCatAvailable) {
                 showPaywall();
                 return;
               }
@@ -747,7 +713,6 @@ function AppContent() {
               isPro={isPro}
               showPaywall={showPaywall}
               revenueCatAvailable={revenueCatAvailable}
-              entitlementResolved={entitlementResolved}
             />
           )}
           <SettingsModal
@@ -771,7 +736,7 @@ function AppContent() {
             visible={subscriptionManagementVisible}
             onClose={() => setSubscriptionManagementVisible(false)}
             customerInfo={customerInfo}
-            onOpenCustomerCenter={showCustomerCenter}
+            onManageInStore={openStoreSubscriptions}
           />
           {foregroundPermissionResolved ? (
             <ConsentDialog onConsentCompleted={() => setConsentCompleted(true)} />

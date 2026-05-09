@@ -44,14 +44,11 @@ export function DocumentsModal({ visible, onClose }: DocumentsModalProps) {
   const [quickShowUri, setQuickShowUri] = useState<string | null>(null);
   const prevBrightnessRef = useRef<number | null>(null);
 
-  const defaultDocuments = useMemo(
-    () => documents.filter((d) => d.isDefault),
-    [documents],
-  );
-  const customDocuments = useMemo(
-    () => documents.filter((d) => !d.isDefault),
-    [documents],
-  );
+  const orderedDocuments = useMemo(() => {
+    const defaults = documents.filter((d) => d.isDefault);
+    const custom = documents.filter((d) => !d.isDefault);
+    return [...defaults, ...custom];
+  }, [documents]);
 
   useEffect(() => {
     if (visible) {
@@ -607,22 +604,10 @@ export function DocumentsModal({ visible, onClose }: DocumentsModalProps) {
                   Loading documents...
                 </Text>
               ) : (
-                <>
-                  <View className="flex-row flex-wrap justify-between">
-                    {defaultDocuments.map(renderDocCard)}
-                    {renderAddCard()}
-                  </View>
-                  {customDocuments.length > 0 ? (
-                    <View className="mt-1">
-                      <Text className="text-slate-500 text-xs uppercase tracking-widest mb-2">
-                        Custom
-                      </Text>
-                      <View className="flex-row flex-wrap justify-between">
-                        {customDocuments.map(renderDocCard)}
-                      </View>
-                    </View>
-                  ) : null}
-                </>
+                <View className="flex-row flex-wrap justify-between">
+                  {orderedDocuments.map(renderDocCard)}
+                  {renderAddCard()}
+                </View>
               )}
               {error ? (
                 <Text className="text-rose-300 text-xs mt-2">{error}</Text>

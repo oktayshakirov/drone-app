@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Platform } from "react-native";
+import { Linking, Platform } from "react-native";
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { CustomerInfo } from "react-native-purchases";
@@ -34,12 +34,11 @@ export interface UseRevenueCatResult {
   restore: () => Promise<{ success: boolean; error?: RevenueCatError }>;
   /** Present RevenueCat Customer Center (manage subscription, restore, etc.). */
   showCustomerCenter: () => Promise<void>;
+  /** Open native store subscriptions management screen. */
+  openStoreSubscriptions: () => Promise<void>;
   /** True when RevenueCat is configured and available on this platform. */
   isAvailable: boolean;
-  /**
-   * True once we know whether to treat the user as Pro: from cache, after a
-   * customer-info fetch (success or failure), or after configure failure.
-   */
+  /** True after entitlement state has been fetched successfully at least once. */
   entitlementResolved: boolean;
 }
 
@@ -96,10 +95,8 @@ export function useRevenueCat(): UseRevenueCatResult {
       const hasPro = hasProEntitlement(info ?? null);
       setCachedIsPro(hasPro);
       persistProCache(hasPro);
+      setEntitlementResolved(true);
     }
-    // Always mark resolved after an attempt so UI can treat unknown-as-free for paywalls/ads
-    // instead of staying stuck while Pro users wait for a retry.
-    setEntitlementResolved(true);
   }, [isAvailable, persistProCache]);
 
   useEffect(() => {
@@ -114,7 +111,6 @@ export function useRevenueCat(): UseRevenueCatResult {
       if (cancelled) return;
       if (!ok && configError) {
         setError(configError);
-        setEntitlementResolved(true);
         setLoading(false);
         return;
       }
@@ -182,8 +178,8 @@ export function useRevenueCat(): UseRevenueCatResult {
       const hasPro = hasProEntitlement(info ?? null);
       setCachedIsPro(hasPro);
       persistProCache(hasPro);
+      setEntitlementResolved(true);
     }
-    setEntitlementResolved(true);
     setLoading(false);
     return { success: Boolean(info && !err), error: err ?? undefined };
   }, [isAvailable, persistProCache]);
@@ -204,6 +200,36 @@ export function useRevenueCat(): UseRevenueCatResult {
     }
   }, [isAvailable, fetchCustomerInfo]);
 
+  const openStoreSubscriptions = useCallback(async () => {
+    if (Platform.OS === "ios") {
+      const iosUrl = "https://apps.apple.com/account/subscriptions";
+      await Linking.openURL(iosUrl);
+      return;
+    }
+    if (Platform.OS === "android") {
+      const pkg =
+        (
+          Constants.expoConfig as {
+            android?: { package?: string };
+          }
+        )?.android?.package ?? "com.shadev.dronepal";
+      const candidates = [
+        `https://play.google.com/store/account/subscriptions?package=${pkg}`,
+        "https://play.google.com/store/account/subscriptions",
+      ];
+      for (const url of candidates) {
+        try {
+          const canOpen = await Linking.canOpenURL(url);
+          if (!canOpen) continue;
+          await Linking.openURL(url);
+          return;
+        } catch {
+          // Try the next candidate URL.
+        }
+      }
+    }
+  }, []);
+
   const isPro = hasProEntitlement(customerInfo) || cachedIsPro;
 
   return {
@@ -216,6 +242,7 @@ export function useRevenueCat(): UseRevenueCatResult {
     showPaywallIfNeeded,
     restore,
     showCustomerCenter,
+    openStoreSubscriptions,
     isAvailable,
     entitlementResolved,
   };

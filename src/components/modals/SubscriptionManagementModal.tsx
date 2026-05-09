@@ -8,7 +8,7 @@ interface SubscriptionManagementModalProps {
   visible: boolean;
   onClose: () => void;
   customerInfo: CustomerInfo | null;
-  onOpenCustomerCenter: () => Promise<void>;
+  onManageInStore: () => Promise<void>;
 }
 
 function getPlanLabel(customerInfo: CustomerInfo | null): string {
@@ -25,7 +25,7 @@ export function SubscriptionManagementModal({
   visible,
   onClose,
   customerInfo,
-  onOpenCustomerCenter,
+  onManageInStore,
 }: SubscriptionManagementModalProps) {
   const planLabel = getPlanLabel(customerInfo);
   const isMonthly = planLabel === "Monthly";
@@ -70,7 +70,7 @@ export function SubscriptionManagementModal({
             <Pressable
               onPress={async () => {
                 onClose();
-                await onOpenCustomerCenter();
+                await onManageInStore();
               }}
               className="flex-row items-center gap-3 py-3 px-4 rounded-xl bg-surface border border-border active:opacity-80 mb-4"
             >

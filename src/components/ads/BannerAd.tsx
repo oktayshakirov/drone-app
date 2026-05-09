@@ -8,21 +8,13 @@ import { useAdConsent } from "./useAdConsent";
 export interface AdBannerProps {
   /** When true, banner is hidden (e.g. Pro users). */
   isPro: boolean;
-  /**
-   * When true, banner stays hidden while RevenueCat is still resolving subscription
-   * (avoids a flash of ads for Pro users on cold start before customer info returns).
-   */
-  deferUntilBillingKnown?: boolean;
 }
 
 /**
  * Bottom banner ad with safe area, fade-in on load, and reload when app returns to foreground.
  * Hidden when isPro is true. Matches the approach from crypto-wiki-app components/ads.
  */
-export function AdBanner({
-  isPro,
-  deferUntilBillingKnown = false,
-}: AdBannerProps) {
+export function AdBanner({ isPro }: AdBannerProps) {
   const insets = useSafeAreaInsets();
   const { requestNonPersonalizedAdsOnly } = useAdConsent();
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -52,7 +44,7 @@ export function AdBanner({
     return () => subscription.remove();
   }, []);
 
-  if (isPro || unitId == null || deferUntilBillingKnown) {
+  if (isPro || unitId == null) {
     return null;
   }
 

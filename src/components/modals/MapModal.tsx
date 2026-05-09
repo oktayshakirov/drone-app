@@ -67,8 +67,6 @@ interface MapModalProps {
   isPro?: boolean;
   showPaywall?: () => Promise<void>;
   revenueCatAvailable?: boolean;
-  /** When false, Pro-only affordances stay usable until billing status is known. */
-  entitlementResolved?: boolean;
 }
 
 type ZoneTapStatus =
@@ -159,7 +157,6 @@ export function MapModal({
   isPro = true,
   showPaywall,
   revenueCatAvailable = false,
-  entitlementResolved = true,
 }: MapModalProps) {
   return (
     <Modal
@@ -179,7 +176,6 @@ export function MapModal({
             isPro={isPro}
             showPaywall={showPaywall}
             revenueCatAvailable={revenueCatAvailable}
-            entitlementResolved={entitlementResolved}
           />
         </View>
       </SafeAreaProvider>
@@ -195,7 +191,6 @@ function MapModalContent({
   isPro,
   showPaywall,
   revenueCatAvailable,
-  entitlementResolved = true,
 }: MapModalProps & { onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const { settings, setMapType } = useSettings();
@@ -633,12 +628,7 @@ function MapModalContent({
             </Pressable>
             <Pressable
               onPress={() => {
-                if (
-                  !isPro &&
-                  revenueCatAvailable &&
-                  entitlementResolved &&
-                  showPaywall
-                ) {
+                if (!isPro && revenueCatAvailable && showPaywall) {
                   showPaywall();
                 } else {
                   setSearchVisible((v) => !v);
