@@ -1,6 +1,7 @@
 import React from "react";
 import { Modal, View, Text, Pressable, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import type {
   Settings,
   Units,
@@ -60,6 +61,7 @@ export function SettingsModal({
   devProEnabled = false,
   setDevProEnabled,
 }: SettingsModalProps) {
+  const insets = useSafeAreaInsets();
   if (!visible) return null;
 
   return (
@@ -69,9 +71,11 @@ export function SettingsModal({
       animationType="slide"
       onRequestClose={onClose}
     >
+      <SafeAreaProvider>
       <Pressable className="flex-1 bg-black/60 justify-end" onPress={onClose}>
         <Pressable
           className="bg-card border-t border-border rounded-t-3xl max-h-[85%]"
+          style={{ paddingBottom: insets.bottom }}
           onPress={(e) => e.stopPropagation()}
         >
           <View className="w-12 h-1 bg-slate-600 rounded-full self-center mt-3 mb-1" />
@@ -156,6 +160,7 @@ export function SettingsModal({
           </ScrollView>
         </Pressable>
       </Pressable>
+      </SafeAreaProvider>
     </Modal>
   );
 }

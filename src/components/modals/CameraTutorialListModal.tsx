@@ -1,6 +1,7 @@
 import React from "react";
 import { Modal, View, Text, Pressable, ScrollView, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   CAMERA_TUTORIALS,
   type CameraTutorial,
@@ -27,6 +28,7 @@ export function CameraTutorialListModal({
   isPro,
   onSelectTutorial,
 }: CameraTutorialListModalProps) {
+  const insets = useSafeAreaInsets();
   if (!visible) return null;
 
   const handleBackdropPress = () => {
@@ -44,6 +46,7 @@ export function CameraTutorialListModal({
         else onClose();
       }}
     >
+      <SafeAreaProvider>
       <View className="flex-1 justify-end">
         <Pressable
           className="absolute inset-0 bg-black/60"
@@ -52,6 +55,7 @@ export function CameraTutorialListModal({
 
         <Pressable
           className="bg-card border-t border-border rounded-t-3xl max-h-[85%] z-[1]"
+          style={{ paddingBottom: insets.bottom }}
           onPress={(e) => e.stopPropagation()}
         >
           <View className="w-12 h-1 bg-slate-600 rounded-full self-center mt-3 mb-1" />
@@ -167,7 +171,7 @@ export function CameraTutorialListModal({
             <Pressable
               className="w-full bg-card border-t border-border rounded-t-3xl p-6 max-h-[85%] z-[11]"
               onPress={(e) => e.stopPropagation()}
-              style={{ elevation: 26 }}
+              style={{ elevation: 26, paddingBottom: Math.max(24, insets.bottom) }}
             >
               <View className="w-12 h-1 bg-slate-600 rounded-full self-center mt-1 mb-2" />
               <View className="flex-row items-center justify-end -mt-2 mb-2">
@@ -184,6 +188,7 @@ export function CameraTutorialListModal({
           </View>
         ) : null}
       </View>
+      </SafeAreaProvider>
     </Modal>
   );
 }

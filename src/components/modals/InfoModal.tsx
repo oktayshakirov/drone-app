@@ -1,6 +1,7 @@
 import React from "react";
 import { Modal, View, Text, Pressable, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { getInfo } from "../../constants/metricCopy";
 import type { ConditionBreakdownItem } from "../../utils/goNoGo";
 import type { SafetyStatus } from "../../types/weather";
@@ -239,6 +240,7 @@ export function InfoModal({
   windUnit = "mph",
   useImperial = true,
 }: InfoModalProps) {
+  const insets = useSafeAreaInsets();
   const info = metricKey ? getInfo(metricKey) : null;
   const showForecast =
     metricKey &&
@@ -264,9 +266,11 @@ export function InfoModal({
       animationType="fade"
       onRequestClose={onClose}
     >
+      <SafeAreaProvider>
       <Pressable className="flex-1 bg-black/60 justify-end" onPress={onClose}>
         <Pressable
           className="bg-card border-t border-border rounded-t-3xl p-6 max-h-[85%]"
+          style={{ paddingBottom: Math.max(24, insets.bottom) }}
           onPress={(e) => e.stopPropagation()}
         >
           <View className="w-12 h-1 bg-slate-600 rounded-full self-center mt-1 mb-2" />
@@ -331,6 +335,7 @@ export function InfoModal({
           )}
         </Pressable>
       </Pressable>
+      </SafeAreaProvider>
     </Modal>
   );
 }

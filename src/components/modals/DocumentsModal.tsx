@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import * as Brightness from "expo-brightness";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
@@ -25,6 +26,7 @@ type EditableDocument = Omit<PilotDocument, "createdAt" | "updatedAt">;
 const DOCUMENT_IMAGE_ASPECT_RATIO = 16 / 9;
 
 export function DocumentsModal({ visible, onClose }: DocumentsModalProps) {
+  const insets = useSafeAreaInsets();
   const {
     documents,
     loading,
@@ -319,9 +321,11 @@ export function DocumentsModal({ visible, onClose }: DocumentsModalProps) {
       animationType="slide"
       onRequestClose={onClose}
     >
+      <SafeAreaProvider>
       <Pressable className="flex-1 bg-black/60 justify-end" onPress={onClose}>
         <Pressable
           className="bg-card border-t border-border rounded-t-3xl max-h-[90%]"
+          style={{ paddingBottom: insets.bottom }}
           onPress={(e) => e.stopPropagation()}
         >
           <View className="w-12 h-1 bg-slate-600 rounded-full self-center mt-3 mb-1" />
@@ -649,6 +653,7 @@ export function DocumentsModal({ visible, onClose }: DocumentsModalProps) {
           </ScrollView>
         </View>
       </Modal>
+      </SafeAreaProvider>
     </Modal>
   );
 }

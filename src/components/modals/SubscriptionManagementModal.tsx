@@ -1,6 +1,7 @@
 import React from "react";
 import { Modal, View, Text, Pressable, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import type { CustomerInfo } from "react-native-purchases";
 import { ENTITLEMENT_PRO } from "../../constants/revenueCat";
 
@@ -27,6 +28,7 @@ export function SubscriptionManagementModal({
   customerInfo,
   onManageInStore,
 }: SubscriptionManagementModalProps) {
+  const insets = useSafeAreaInsets();
   const planLabel = getPlanLabel(customerInfo);
   const isMonthly = planLabel === "Monthly";
   const isLifetime = planLabel === "Lifetime";
@@ -40,9 +42,11 @@ export function SubscriptionManagementModal({
       animationType="slide"
       onRequestClose={onClose}
     >
+      <SafeAreaProvider>
       <Pressable className="flex-1 bg-black/60 justify-end" onPress={onClose}>
         <Pressable
           className="bg-card border-t border-border rounded-t-3xl max-h-[70%]"
+          style={{ paddingBottom: insets.bottom }}
           onPress={(e) => e.stopPropagation()}
         >
           <View className="w-12 h-1 bg-slate-600 rounded-full self-center mt-3 mb-2" />
@@ -113,6 +117,7 @@ export function SubscriptionManagementModal({
           </View>
         </Pressable>
       </Pressable>
+      </SafeAreaProvider>
     </Modal>
   );
 }
