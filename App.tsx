@@ -26,7 +26,6 @@ import {
   LocationPickerModal,
   MapModal,
   SettingsModal,
-  SubscriptionManagementModal,
   CameraTutorialListModal,
   DocumentsModal,
 } from "./src/components";
@@ -46,7 +45,6 @@ import {
   getThresholdsForWeightClass,
   WEIGHT_CLASS_OPTIONS,
 } from "./src/constants/droneThresholds";
-import { ENTITLEMENT_PRO } from "./src/constants/revenueCat";
 import { useLocation } from "./src/hooks/useLocation";
 import { useWeather } from "./src/hooks/useWeather";
 import { useRevenueCat } from "./src/hooks/useRevenueCat";
@@ -97,6 +95,19 @@ const LAST_FREE_REFRESH_KEY = "dronepal_lastFreeRefresh";
 const FREE_REFRESH_INTERVAL_MS = 12 * 60 * 60 * 1000;
 const DEV_FORCE_PRO_KEY = "dronepal_devForcePro";
 
+/** Human-friendly age for cached conditions, e.g. "just now", "8 min ago", "3 h ago". */
+function formatRelativeAge(timestamp: number | null): string {
+  if (timestamp == null) return "";
+  const diffMs = Date.now() - timestamp;
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} d ago`;
+}
+
 function AppContent() {
   const [infoMetric, setInfoMetric] = useState<string | null>(null);
   const [locationPickerVisible, setLocationPickerVisible] = useState(false);
@@ -107,8 +118,6 @@ function AppContent() {
     useState<React.ComponentType<{ isPro: boolean }> | null>(null);
   const [consentCompleted, setConsentCompleted] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [subscriptionManagementVisible, setSubscriptionManagementVisible] =
-    useState(false);
   const [cameraTutorialListVisible, setCameraTutorialListVisible] =
     useState(false);
   const [cameraTutorialDetail, setCameraTutorialDetail] =
@@ -133,11 +142,21 @@ function AppContent() {
     clearPickedLocation,
   } = useLocation();
   const env = useMemo(() => getWeatherKitEnv(), []);
+  const netInfo = useNetInfo();
+  const isOffline =
+    netInfo.isConnected === false || netInfo.isInternetReachable === false;
   const {
     data: weather,
     loading: weatherLoading,
+    lastUpdated: weatherLastUpdated,
+    isStale: weatherIsStale,
     refetch: refetchWeather,
-  } = useWeather(coords?.latitude ?? null, coords?.longitude ?? null, env);
+  } = useWeather(
+    coords?.latitude ?? null,
+    coords?.longitude ?? null,
+    env,
+    isOffline,
+  );
 
   const {
     isPro: billingIsPro,
@@ -147,9 +166,6 @@ function AppContent() {
     isAvailable: revenueCatAvailable,
     restore,
   } = useRevenueCat();
-  const netInfo = useNetInfo();
-  const isOffline =
-    netInfo.isConnected === false || netInfo.isInternetReachable === false;
   const isDevelopment = __DEV__;
   const isPro = billingIsPro || (isDevelopment && devForcePro);
 
@@ -180,17 +196,6 @@ function AppContent() {
     },
     [setDevForcePro],
   );
-
-  const proPlanLabel = useMemo(() => {
-    if (!customerInfo?.entitlements?.active) return "Pro";
-    const ent = customerInfo.entitlements.active[ENTITLEMENT_PRO] as
-      | { productIdentifier?: string }
-      | undefined;
-    const id = ent?.productIdentifier;
-    if (id === "lifetime") return "Lifetime";
-    if (id === "monthly") return "Monthly";
-    return "Pro";
-  }, [customerInfo]);
 
   useEffect(() => {
     if (Constants.appOwnership === "expo") return;
@@ -424,6 +429,9 @@ function AppContent() {
 
   const showOfflineBanner = isOffline && Boolean(weather);
   const showOfflineLoadingBanner = isOffline && !weather;
+  // Online but showing older cached data (e.g. a refresh failed): let the user know.
+  const showStaleBanner = !isOffline && weatherIsStale && Boolean(weather);
+  const cachedAgeLabel = formatRelativeAge(weatherLastUpdated);
 
   return (
     <SafeAreaProvider>
@@ -448,16 +456,28 @@ function AppContent() {
               }
             >
               {showOfflineBanner && (
-                <View className="mb-3 p-3 rounded-lg bg-slate-700/40 border border-slate-600/60">
-                  <Text className="text-slate-200 text-xs">
-                    You are offline. Showing last loaded data.
+                <View className="mb-3 p-3 rounded-lg bg-slate-700/40 border border-slate-600/60 flex-row items-center gap-2">
+                  <Ionicons name="cloud-offline-outline" size={16} color="#cbd5e1" />
+                  <Text className="text-slate-200 text-xs flex-1">
+                    You're offline — showing conditions saved{" "}
+                    {cachedAgeLabel}.
                   </Text>
                 </View>
               )}
               {showOfflineLoadingBanner && (
-                <View className="mb-3 p-3 rounded-lg bg-slate-700/40 border border-slate-600/60">
-                  <Text className="text-slate-200 text-xs">
-                    You are offline. Waiting for connection to load live data.
+                <View className="mb-3 p-3 rounded-lg bg-slate-700/40 border border-slate-600/60 flex-row items-center gap-2">
+                  <Ionicons name="cloud-offline-outline" size={16} color="#cbd5e1" />
+                  <Text className="text-slate-200 text-xs flex-1">
+                    You're offline. Connect to the internet to load conditions.
+                  </Text>
+                </View>
+              )}
+              {showStaleBanner && (
+                <View className="mb-3 p-3 rounded-lg bg-slate-700/40 border border-slate-600/60 flex-row items-center gap-2">
+                  <Ionicons name="time-outline" size={16} color="#cbd5e1" />
+                  <Text className="text-slate-200 text-xs flex-1">
+                    Showing saved conditions from {cachedAgeLabel}. Pull down to
+                    refresh.
                   </Text>
                 </View>
               )}
@@ -631,17 +651,6 @@ function AppContent() {
                   />
                 </View>
               )}
-              {isPro && revenueCatAvailable && (
-                <Pressable
-                  onPress={() => setSubscriptionManagementVisible(true)}
-                  className="mt-6 py-3 flex-row items-center justify-center gap-2 rounded-lg active:opacity-80"
-                >
-                  <Ionicons name="card-outline" size={16} color="#94a3b8" />
-                  <Text className="text-slate-400 text-sm">
-                    Manage subscription: {proPlanLabel}
-                  </Text>
-                </Pressable>
-              )}
               <View className="mt-8 pt-4 border-t border-border flex-row items-center justify-center gap-1.5">
                 <Text className="text-slate-500 text-xs font-bold">
                   Powered by
@@ -727,16 +736,15 @@ function AppContent() {
             showDevProToggle={isDevelopment}
             devProEnabled={devForcePro}
             setDevProEnabled={setDevForceProEnabled}
+            isPro={isPro}
+            revenueCatAvailable={revenueCatAvailable}
+            customerInfo={customerInfo}
+            onManageInStore={openStoreSubscriptions}
+            onUpgrade={showPaywall}
           />
           <DocumentsModal
             visible={documentsModalVisible}
             onClose={() => setDocumentsModalVisible(false)}
-          />
-          <SubscriptionManagementModal
-            visible={subscriptionManagementVisible}
-            onClose={() => setSubscriptionManagementVisible(false)}
-            customerInfo={customerInfo}
-            onManageInStore={openStoreSubscriptions}
           />
           {foregroundPermissionResolved ? (
             <ConsentDialog onConsentCompleted={() => setConsentCompleted(true)} />

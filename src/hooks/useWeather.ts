@@ -21,22 +21,17 @@ function cacheKey(lat: number, lon: number): string {
 
 async function readCache(
   key: string,
-): Promise<{ payload: CachePayload | null; isFresh: boolean; isStaleValid: boolean }> {
+): Promise<{ payload: CachePayload | null; age: number }> {
   const raw = await AsyncStorage.getItem(key);
-  if (!raw) return { payload: null, isFresh: false, isStaleValid: false };
+  if (!raw) return { payload: null, age: Infinity };
   try {
     const payload = JSON.parse(raw) as CachePayload;
     if (!payload?.timestamp || !payload?.data) {
-      return { payload: null, isFresh: false, isStaleValid: false };
+      return { payload: null, age: Infinity };
     }
-    const age = Date.now() - payload.timestamp;
-    return {
-      payload,
-      isFresh: age <= CACHE_TTL_MS,
-      isStaleValid: age <= STALE_TTL_MS,
-    };
+    return { payload, age: Date.now() - payload.timestamp };
   } catch {
-    return { payload: null, isFresh: false, isStaleValid: false };
+    return { payload: null, age: Infinity };
   }
 }
 
@@ -49,21 +44,30 @@ export function useWeather(
   latitude: number | null,
   longitude: number | null,
   env: WeatherKitEnv | null,
+  isOffline: boolean = false,
 ): {
   data: WeatherData | null;
   error: string | null;
   loading: boolean;
+  /** Timestamp (ms) of the data currently shown, or null when none is available. */
+  lastUpdated: number | null;
+  /** True when the shown data is older than the fresh window (e.g. served from cache offline). */
+  isStale: boolean;
   refetch: () => Promise<void>;
 } {
   const [data, setData] = useState<WeatherData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
+  const [isStale, setIsStale] = useState(false);
 
   const load = useCallback(async (): Promise<void> => {
     if (latitude == null || longitude == null) {
       setData(null);
       setError(null);
       setLoading(true);
+      setLastUpdated(null);
+      setIsStale(false);
       return;
     }
     const key = cacheKey(latitude, longitude);
@@ -72,12 +76,37 @@ export function useWeather(
       setData(null);
       setError(null);
       setLoading(true);
+      setLastUpdated(null);
+      setIsStale(false);
       return;
     }
 
     const cache = await readCache(key);
-    if (cache.payload && cache.isFresh) {
+
+    // Offline: serve cached data of any age and skip the network entirely.
+    // Skeletons stay visible only when there is nothing cached to show.
+    if (isOffline) {
+      if (cache.payload) {
+        setData(cache.payload.data);
+        setLastUpdated(cache.payload.timestamp);
+        setIsStale(cache.age > CACHE_TTL_MS);
+        setError(null);
+        setLoading(false);
+      } else {
+        setData(null);
+        setLastUpdated(null);
+        setIsStale(false);
+        setError(null);
+        setLoading(true);
+      }
+      return;
+    }
+
+    // Online with a fresh cache hit: show immediately, no network needed.
+    if (cache.payload && cache.age <= CACHE_TTL_MS) {
       setData(cache.payload.data);
+      setLastUpdated(cache.payload.timestamp);
+      setIsStale(false);
       setError(null);
       setLoading(false);
       return;
@@ -91,9 +120,13 @@ export function useWeather(
       setData(null);
       setError(null);
       setLoading(true);
+      setLastUpdated(null);
+      setIsStale(false);
       return;
     }
 
+    // Keep any existing data on screen while refreshing; skeletons are shown
+    // by the consumer only when there is no data yet.
     setLoading(true);
     setError(null);
 
@@ -110,20 +143,29 @@ export function useWeather(
         // Keep weather even if KP index endpoint fails.
       }
       setData(next);
+      setLastUpdated(Date.now());
+      setIsStale(false);
+      setLoading(false);
       await writeCache(key, next);
     } catch (err) {
-      if (cache.payload && cache.isStaleValid) {
+      void err;
+      // Network failed while online: fall back to cached data of any age,
+      // flagged stale so the UI can show how old it is.
+      if (cache.payload) {
         setData(cache.payload.data);
+        setLastUpdated(cache.payload.timestamp);
+        setIsStale(cache.age > CACHE_TTL_MS);
         setLoading(false);
         return;
       }
-      // Keep skeleton visible when weather cannot be loaded.
-      void err;
+      // Nothing cached: keep skeleton visible.
       setData(null);
+      setLastUpdated(null);
+      setIsStale(false);
       setError(null);
       setLoading(true);
     }
-  }, [latitude, longitude, env]);
+  }, [latitude, longitude, env, isOffline]);
 
   useEffect(() => {
     load();
@@ -133,6 +175,8 @@ export function useWeather(
     data,
     error,
     loading,
+    lastUpdated,
+    isStale,
     refetch: useCallback(() => load(), [load]),
   };
 }

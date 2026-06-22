@@ -1,10 +1,11 @@
 import React from "react";
-import { Modal, View, Text, Pressable, ScrollView, Linking, Alert } from "react-native";
+import { Modal, View, Text, Pressable, ScrollView, Linking, Alert, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import * as MailComposer from "expo-mail-composer";
 import * as StoreReview from "expo-store-review";
 import Constants from "expo-constants";
+import type { CustomerInfo } from "react-native-purchases";
 import type {
   Settings,
   Units,
@@ -13,7 +14,18 @@ import type {
 } from "../../types/settings";
 import type { WeightClassId } from "../../constants/droneThresholds";
 import { WEIGHT_CLASS_OPTIONS } from "../../constants/droneThresholds";
+import { ENTITLEMENT_PRO } from "../../constants/revenueCat";
 import { OptionList } from "../ui/OptionList";
+
+function getPlanLabel(customerInfo: CustomerInfo | null): string {
+  if (!customerInfo?.entitlements?.active) return "Pro";
+  const entitlement = customerInfo.entitlements.active[ENTITLEMENT_PRO];
+  if (!entitlement) return "Pro";
+  const id = (entitlement as { productIdentifier?: string }).productIdentifier;
+  if (id === "lifetime") return "Lifetime";
+  if (id === "monthly") return "Monthly";
+  return "Pro";
+}
 
 const UNITS_OPTIONS: { id: Units; label: string }[] = [
   { id: "imperial", label: "Imperial (°F, mi)" },
@@ -100,9 +112,14 @@ interface SettingsModalProps {
   showDevProToggle?: boolean;
   devProEnabled?: boolean;
   setDevProEnabled?: (enabled: boolean) => void;
+  isPro?: boolean;
+  revenueCatAvailable?: boolean;
+  customerInfo?: CustomerInfo | null;
+  onManageInStore?: () => Promise<void>;
+  onUpgrade?: () => void;
 }
 
-type Tab = "settings" | "connect";
+type Tab = "settings" | "connect" | "plan";
 
 export function SettingsModal({
   visible,
@@ -116,9 +133,19 @@ export function SettingsModal({
   showDevProToggle = false,
   devProEnabled = false,
   setDevProEnabled,
+  isPro = false,
+  revenueCatAvailable = false,
+  customerInfo = null,
+  onManageInStore,
+  onUpgrade,
 }: SettingsModalProps) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = React.useState<Tab>("settings");
+
+  const showPlanTab = revenueCatAvailable;
+  const effectiveTab: Tab =
+    activeTab === "plan" && !showPlanTab ? "settings" : activeTab;
+  const planLabel = getPlanLabel(customerInfo);
 
   if (!visible) return null;
 
@@ -142,7 +169,11 @@ export function SettingsModal({
           {/* Header */}
           <View className="flex-row items-center justify-between px-4 pt-2 pb-3">
             <Text className="text-white text-lg font-semibold">
-              {activeTab === "settings" ? "Settings" : "Connect"}
+              {effectiveTab === "settings"
+                ? "Settings"
+                : effectiveTab === "connect"
+                  ? "Connect"
+                  : "Plan"}
             </Text>
             <Pressable
               onPress={onClose}
@@ -157,26 +188,37 @@ export function SettingsModal({
           <View className="flex-row mx-4 mb-4 bg-muted/40 rounded-xl p-1">
             <Pressable
               onPress={() => setActiveTab("settings")}
-              className={`flex-1 flex-row items-center justify-center gap-2 py-2 rounded-lg ${activeTab === "settings" ? "bg-card" : ""}`}
+              className={`flex-1 flex-row items-center justify-center gap-1.5 py-2 rounded-lg ${effectiveTab === "settings" ? "bg-card" : ""}`}
             >
-              <Ionicons name="settings-outline" size={15} color={activeTab === "settings" ? "#fff" : "#64748b"} />
-              <Text className={`text-sm font-medium ${activeTab === "settings" ? "text-white" : "text-slate-500"}`}>
+              <Ionicons name="settings-outline" size={15} color={effectiveTab === "settings" ? "#fff" : "#64748b"} />
+              <Text className={`text-sm font-medium ${effectiveTab === "settings" ? "text-white" : "text-slate-500"}`}>
                 Settings
               </Text>
             </Pressable>
             <Pressable
               onPress={() => setActiveTab("connect")}
-              className={`flex-1 flex-row items-center justify-center gap-2 py-2 rounded-lg ${activeTab === "connect" ? "bg-card" : ""}`}
+              className={`flex-1 flex-row items-center justify-center gap-1.5 py-2 rounded-lg ${effectiveTab === "connect" ? "bg-card" : ""}`}
             >
-              <Ionicons name="chatbubble-ellipses-outline" size={15} color={activeTab === "connect" ? "#fff" : "#64748b"} />
-              <Text className={`text-sm font-medium ${activeTab === "connect" ? "text-white" : "text-slate-500"}`}>
+              <Ionicons name="chatbubble-ellipses-outline" size={15} color={effectiveTab === "connect" ? "#fff" : "#64748b"} />
+              <Text className={`text-sm font-medium ${effectiveTab === "connect" ? "text-white" : "text-slate-500"}`}>
                 Connect
               </Text>
             </Pressable>
+            {showPlanTab && (
+              <Pressable
+                onPress={() => setActiveTab("plan")}
+                className={`flex-1 flex-row items-center justify-center gap-1.5 py-2 rounded-lg ${effectiveTab === "plan" ? "bg-card" : ""}`}
+              >
+                <Ionicons name="card-outline" size={15} color={effectiveTab === "plan" ? "#fff" : "#64748b"} />
+                <Text className={`text-sm font-medium ${effectiveTab === "plan" ? "text-white" : "text-slate-500"}`}>
+                  Plan
+                </Text>
+              </Pressable>
+            )}
           </View>
 
           {/* Settings tab */}
-          {activeTab === "settings" && (
+          {effectiveTab === "settings" && (
             <ScrollView className="px-4" showsVerticalScrollIndicator={false}>
               <View className="mb-6">
                 <OptionList
@@ -240,7 +282,7 @@ export function SettingsModal({
           )}
 
           {/* Connect tab */}
-          {activeTab === "connect" && (
+          {effectiveTab === "connect" && (
             <ScrollView className="px-4" showsVerticalScrollIndicator={false}>
               <View className="mb-6">
                 <Text className="text-slate-500 text-xs mb-3 uppercase tracking-widest font-medium">Feedback</Text>
@@ -305,6 +347,83 @@ export function SettingsModal({
                   <Ionicons name="chevron-forward" size={16} color="#475569" />
                 </Pressable>
               </View>
+            </ScrollView>
+          )}
+
+          {/* Plan tab */}
+          {effectiveTab === "plan" && (
+            <ScrollView className="px-4" showsVerticalScrollIndicator={false}>
+              <View className="mb-4 py-3 px-4 rounded-xl bg-muted/40 border border-border">
+                <Text className="text-slate-400 text-sm">Current plan</Text>
+                <Text className="text-white font-semibold text-lg mt-0.5">
+                  {isPro ? planLabel : "Free"}
+                </Text>
+              </View>
+
+              {isPro ? (
+                <>
+                  <Pressable
+                    onPress={async () => {
+                      onClose();
+                      await onManageInStore?.();
+                    }}
+                    className="flex-row items-center gap-3 py-3 px-4 rounded-xl bg-muted/40 border border-border active:opacity-80 mb-6"
+                  >
+                    <Ionicons name="card-outline" size={22} color="#94a3b8" />
+                    <View className="flex-1">
+                      <Text className="text-white font-medium">
+                        Manage in {Platform.OS === "ios" ? "App Store" : "Play Store"}
+                      </Text>
+                      <Text className="text-slate-400 text-sm mt-0.5">
+                        Cancel, update payment, or change plan
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
+                  </Pressable>
+
+                  {planLabel === "Monthly" && (
+                    <View className="mb-6 p-4 rounded-xl bg-safe-green/10 border border-safe-green/30">
+                      <Text className="text-safe-green font-semibold mb-1">
+                        Tip: Save money with Pro Lifetime
+                      </Text>
+                      <Text className="text-slate-300 text-sm">
+                        Pay once and never worry about renewals. Upgrade to Pro
+                        Lifetime to lock in your Pro benefits forever.
+                      </Text>
+                    </View>
+                  )}
+
+                  {planLabel === "Lifetime" && (
+                    <View className="mb-6 p-4 rounded-xl bg-safe-green/10 border border-safe-green/30">
+                      <Text className="text-safe-green font-semibold mb-1">
+                        Thank you for supporting DronePal
+                      </Text>
+                      <Text className="text-slate-300 text-sm">
+                        Your Lifetime purchase unlocks Pro benefits forever.
+                        You'll also receive any future features and improvements
+                        we add to the app at no extra cost.
+                      </Text>
+                    </View>
+                  )}
+                </>
+              ) : (
+                <Pressable
+                  onPress={() => {
+                    onClose();
+                    onUpgrade?.();
+                  }}
+                  className="flex-row items-center gap-3 py-3 px-4 rounded-xl bg-muted/40 border border-border active:opacity-80 mb-6"
+                >
+                  <Ionicons name="rocket-outline" size={22} color="#FFC682" />
+                  <View className="flex-1">
+                    <Text className="text-white font-medium">Upgrade to Pro</Text>
+                    <Text className="text-slate-400 text-sm mt-0.5">
+                      Unlock the full DronePal experience
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
+                </Pressable>
+              )}
             </ScrollView>
           )}
         </Pressable>
