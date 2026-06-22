@@ -142,6 +142,11 @@ export function SettingsModal({
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = React.useState<Tab>("settings");
 
+  // Always start on the Settings tab each time the modal opens.
+  React.useEffect(() => {
+    if (visible) setActiveTab("settings");
+  }, [visible]);
+
   const showPlanTab = revenueCatAvailable;
   const effectiveTab: Tab =
     activeTab === "plan" && !showPlanTab ? "settings" : activeTab;
