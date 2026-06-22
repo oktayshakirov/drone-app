@@ -44,7 +44,7 @@ export const WEIGHT_CLASS_OPTIONS: WeightClassOption[] = [
   },
   {
     id: "250_500",
-    label: "250 g – 500 g",
+    label: "250–500 g",
     thresholds: {
       windGustMphRed: 24,
       visibilityMetersRed: VISIBILITY_RED_M,
@@ -54,7 +54,7 @@ export const WEIGHT_CLASS_OPTIONS: WeightClassOption[] = [
   },
   {
     id: "500_1000",
-    label: "500 g – 1 kg",
+    label: "500 g–1 kg",
     thresholds: {
       windGustMphRed: 30,
       visibilityMetersRed: VISIBILITY_RED_M,

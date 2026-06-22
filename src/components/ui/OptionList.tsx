@@ -28,6 +28,8 @@ interface OptionListProps<T extends string | boolean> {
   label?: string;
   /** Optional icon next to the label. */
   iconName?: keyof typeof Ionicons.glyphMap;
+  /** Reduces font size and padding for tight horizontal rows with many options. */
+  compact?: boolean;
 }
 
 export function OptionList<T extends string | boolean>({
@@ -38,6 +40,7 @@ export function OptionList<T extends string | boolean>({
   layout = "vertical",
   label,
   iconName,
+  compact = false,
 }: OptionListProps<T>) {
   const isHorizontal = layout === "horizontal";
 
@@ -55,6 +58,7 @@ export function OptionList<T extends string | boolean>({
             style={[
               styles.optionRow,
               isHorizontal && styles.optionRowHorizontal,
+              isHorizontal && compact && styles.optionRowCompact,
               !isLast &&
                 (isHorizontal
                   ? styles.optionRowBorderRight
@@ -68,8 +72,11 @@ export function OptionList<T extends string | boolean>({
                 styles.optionText,
                 isSelected && styles.optionTextSelected,
                 isHorizontal && styles.optionTextHorizontal,
+                isHorizontal && compact && styles.optionTextCompact,
               ]}
               numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
             >
               {opt.label}
             </Text>
@@ -137,6 +144,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 12,
   },
+  optionRowCompact: {
+    paddingVertical: 9,
+    paddingHorizontal: 4,
+  },
   optionRowBorderBottom: {
     borderBottomWidth: 1,
     borderBottomColor: BORDER_SUBTLE,
@@ -154,6 +165,9 @@ const styles = StyleSheet.create({
   },
   optionTextHorizontal: {
     fontSize: 14,
+  },
+  optionTextCompact: {
+    fontSize: 12,
   },
   optionTextSelected: {
     color: TEXT_SELECTED,

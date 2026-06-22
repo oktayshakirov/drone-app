@@ -72,6 +72,7 @@ module.exports = {
             "Allow DronePal to use your camera to capture flight documents.",
         },
       ],
+      "expo-mail-composer",
       "expo-location",
       "expo-tracking-transparency",
       [
