@@ -30,6 +30,9 @@ module.exports = {
         GADApplicationIdentifier: "ca-app-pub-5852582960793521~8965039341",
         NSUserTrackingUsageDescription:
           "This allows us to show you relevant ads and support DronePal.",
+        // Allows detecting installed mail apps so feedback can open Gmail or
+        // Outlook directly when Apple Mail isn't set up.
+        LSApplicationQueriesSchemes: ["googlegmail", "ms-outlook"],
         // All four orientations required for iPad multitasking (App Store validation)
         UISupportedInterfaceOrientations: ["UIInterfaceOrientationPortrait"],
         "UISupportedInterfaceOrientations~ipad": [

@@ -8,6 +8,7 @@ import {
   Linking,
   Alert,
   Platform,
+  ActionSheetIOS,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -18,6 +19,7 @@ import * as MailComposer from "expo-mail-composer";
 import * as StoreReview from "expo-store-review";
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Clipboard from "expo-clipboard";
 import type { CustomerInfo } from "react-native-purchases";
 import type {
   Settings,
@@ -79,19 +81,123 @@ function openStoreListing() {
   Linking.openURL(url).catch(() => undefined);
 }
 
+interface MailOption {
+  name: string;
+  open: () => Promise<void>;
+}
+
+/** Opens the user's default mail handler (or, on Android, the system chooser). */
+function openMailto(subject: string, body: string): Promise<void> {
+  const mailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
+    subject,
+  )}&body=${encodeURIComponent(body)}`;
+  return Linking.openURL(mailto);
+}
+
+/** Last resort when no mail app exists: let the user copy our address. */
+function showCopyAddressFallback() {
+  Alert.alert(
+    "No email app found",
+    `Copy our address and send your message from any email app:\n\n${CONTACT_EMAIL}`,
+    [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Copy address",
+        onPress: () => {
+          Clipboard.setStringAsync(CONTACT_EMAIL).catch(() => undefined);
+        },
+      },
+    ],
+  );
+}
+
 async function sendMail(subject: string, body: string) {
-  const available = await MailComposer.isAvailableAsync();
-  if (!available) {
-    Alert.alert("No mail app found", `Please email us at ${CONTACT_EMAIL}`, [
-      { text: "OK" },
-    ]);
+  // Android resolves mailto: to its own app chooser (incl. Gmail), so there's
+  // nothing to detect — just open it.
+  if (Platform.OS !== "ios") {
+    try {
+      await openMailto(subject, body);
+    } catch {
+      showCopyAddressFallback();
+    }
     return;
   }
-  await MailComposer.composeAsync({
-    recipients: [CONTACT_EMAIL],
+
+  // iOS: detect installed mail apps, with Gmail prioritized first.
+  const enc = (s: string) => encodeURIComponent(s);
+  const options: MailOption[] = [];
+
+  // Gmail — note the three-slash "/co" compose path required by the app.
+  const gmailUrl = `googlegmail:///co?to=${CONTACT_EMAIL}&subject=${enc(
     subject,
-    body,
-  });
+  )}&body=${enc(body)}`;
+  try {
+    if (await Linking.canOpenURL(gmailUrl)) {
+      options.push({ name: "Gmail", open: () => Linking.openURL(gmailUrl) });
+    }
+  } catch {
+    // Ignore detection failure.
+  }
+
+  // Outlook
+  const outlookUrl = `ms-outlook://compose?to=${CONTACT_EMAIL}&subject=${enc(
+    subject,
+  )}&body=${enc(body)}`;
+  try {
+    if (await Linking.canOpenURL(outlookUrl)) {
+      options.push({ name: "Outlook", open: () => Linking.openURL(outlookUrl) });
+    }
+  } catch {
+    // Ignore detection failure.
+  }
+
+  // Apple Mail — only when an account is configured (so Send actually works).
+  try {
+    if (await MailComposer.isAvailableAsync()) {
+      options.push({
+        name: "Apple Mail",
+        open: async () => {
+          await MailComposer.composeAsync({
+            recipients: [CONTACT_EMAIL],
+            subject,
+            body,
+          });
+        },
+      });
+    }
+  } catch {
+    // Ignore detection failure.
+  }
+
+  // No mail app detected: try the default handler, then copy-address fallback.
+  if (options.length === 0) {
+    try {
+      await openMailto(subject, body);
+    } catch {
+      showCopyAddressFallback();
+    }
+    return;
+  }
+
+  // Exactly one app: open it directly, no need to ask.
+  if (options.length === 1) {
+    await options[0].open();
+    return;
+  }
+
+  // Several apps: ask the user which one to use (Gmail listed first).
+  ActionSheetIOS.showActionSheetWithOptions(
+    {
+      title: "Send feedback with",
+      options: [...options.map((o) => o.name), "Cancel"],
+      cancelButtonIndex: options.length,
+    },
+    (index) => {
+      if (index < options.length) {
+        options[index].open().catch(() => showCopyAddressFallback());
+      }
+    },
+  );
 }
 
 function handleBugReport() {
