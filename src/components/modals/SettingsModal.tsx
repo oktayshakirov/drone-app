@@ -18,6 +18,7 @@ import {
 import * as MailComposer from "expo-mail-composer";
 import * as StoreReview from "expo-store-review";
 import Constants from "expo-constants";
+import * as Device from "expo-device";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Clipboard from "expo-clipboard";
 import type { CustomerInfo } from "react-native-purchases";
@@ -201,9 +202,11 @@ async function sendMail(subject: string, body: string) {
 }
 
 function handleBugReport() {
+  const deviceModel = Device.modelName ?? "Unknown device";
+  const osVersion = `${Device.osName ?? Platform.OS} ${Device.osVersion ?? ""}`.trim();
   sendMail(
     `[Bug Report] DronePal`,
-    `Describe the bug:\n\n\nSteps to reproduce:\n1.\n2.\n3.`,
+    `Describe the bug:\n\n\nSteps to reproduce:\n1.\n2.\n3.\n\n--- App info ---\nVersion: ${APP_VERSION}\nDevice: ${deviceModel}\nOS: ${osVersion}\n`,
   );
 }
 

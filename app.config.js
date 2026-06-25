@@ -4,8 +4,8 @@ module.exports = {
   expo: {
     name: "DronePal",
     slug: "dronepal",
-    version: "1.0.0",
-    runtimeVersion: "1.0.0",
+    version: "1.5.0",
+    runtimeVersion: "1.5.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "dark",
