@@ -586,29 +586,35 @@ export function SettingsModal({
 
                 {isPro ? (
                   <>
-                    <Pressable
-                      onPress={async () => {
-                        onClose();
-                        await onManageInStore?.();
-                      }}
-                      className="flex-row items-center gap-3 py-3 px-4 rounded-xl bg-muted/40 border border-border active:opacity-80 mb-6"
-                    >
-                      <Ionicons name="card-outline" size={22} color="#94a3b8" />
-                      <View className="flex-1">
-                        <Text className="text-white font-medium">
-                          Manage in{" "}
-                          {Platform.OS === "ios" ? "App Store" : "Play Store"}
-                        </Text>
-                        <Text className="text-slate-400 text-sm mt-0.5">
-                          Cancel, update payment, or change plan
-                        </Text>
-                      </View>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={20}
-                        color="#94a3b8"
-                      />
-                    </Pressable>
+                    {planLabel === "Monthly" && (
+                      <Pressable
+                        onPress={async () => {
+                          onClose();
+                          await onManageInStore?.();
+                        }}
+                        className="flex-row items-center gap-3 py-3 px-4 rounded-xl bg-muted/40 border border-border active:opacity-80 mb-6"
+                      >
+                        <Ionicons
+                          name="card-outline"
+                          size={22}
+                          color="#94a3b8"
+                        />
+                        <View className="flex-1">
+                          <Text className="text-white font-medium">
+                            Manage in{" "}
+                            {Platform.OS === "ios" ? "App Store" : "Play Store"}
+                          </Text>
+                          <Text className="text-slate-400 text-sm mt-0.5">
+                            Cancel, update payment, or change plan
+                          </Text>
+                        </View>
+                        <Ionicons
+                          name="chevron-forward"
+                          size={20}
+                          color="#94a3b8"
+                        />
+                      </Pressable>
+                    )}
 
                     {planLabel === "Monthly" && (
                       <View className="mb-6 p-4 rounded-xl bg-safe-green/10 border border-safe-green/30">
