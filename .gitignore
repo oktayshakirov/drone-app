@@ -82,3 +82,4 @@ android/caches/
 android/daemon/
 android/kotlin-profile/
 android/.tmp/
+android/wrapper/

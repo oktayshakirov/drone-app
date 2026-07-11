@@ -4,8 +4,8 @@ module.exports = {
   expo: {
     name: "DronePal",
     slug: "dronepal",
-    version: "1.5.0",
-    runtimeVersion: "1.5.0",
+    version: "1.5.1",
+    runtimeVersion: "1.5.1",
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "dark",
@@ -42,7 +42,7 @@ module.exports = {
       },
     },
     android: {
-      versionCode: 10,
+      versionCode: 11,
       adaptiveIcon: {
         foregroundImage: "./assets/splash-icon.png",
         backgroundColor: "#181818",
