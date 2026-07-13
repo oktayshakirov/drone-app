@@ -183,13 +183,8 @@ function ForecastBlock({
     const h = hourly[idx];
     const label = formatHourLabel(idx);
     let value: string;
-    let subValue: string | undefined;
     if (metricKey === "wind") {
       value = formatWind(h.windSpeedMps, windUnit);
-      subValue =
-        h.windGustMps != null
-          ? `G ${formatWind(h.windGustMps, windUnit)}`
-          : undefined;
     } else if (metricKey === "cloudCover") {
       value = formatPercent(h.cloudCoverPercent);
     } else if (metricKey === "precipitation") {
@@ -199,7 +194,7 @@ function ForecastBlock({
     } else {
       value = "—";
     }
-    return { label, value, subValue };
+    return { label, value };
   });
 
   return <InfoList title="24h forecast" items={items} />;

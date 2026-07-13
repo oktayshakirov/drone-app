@@ -280,11 +280,12 @@ function AppContent() {
   }, [weather, settings.droneWeightClass]);
 
   // Keep the home screen widget in sync with the in-app Go/No-Go card.
+  // The widget is Pro-only; free users see an "Upgrade to Pro" placeholder.
   useEffect(() => {
     if (!weather) return;
     const labels = { green: "Go", yellow: "Caution", red: "No Go" } as const;
-    updateGoNoGoWidget(safetyStatus, labels[safetyStatus]);
-  }, [weather, safetyStatus]);
+    updateGoNoGoWidget(safetyStatus, labels[safetyStatus], isPro);
+  }, [weather, safetyStatus, isPro]);
 
   const { notifyArmed, toggleGoNotification } = useGoNotification({
     weather: weather ?? null,

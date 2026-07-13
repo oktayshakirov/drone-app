@@ -11,6 +11,8 @@ struct GoNoGoEntry: TimelineEntry {
   /// "green" | "yellow" | "red"; nil until the app has written a status.
   let status: String?
   let label: String?
+  /// Widget content is a Pro feature; free users get an upgrade placeholder.
+  let isPro: Bool
 }
 
 private func readStoredEntry() -> GoNoGoEntry {
@@ -18,7 +20,8 @@ private func readStoredEntry() -> GoNoGoEntry {
   return GoNoGoEntry(
     date: Date(),
     status: stored?["status"] as? String,
-    label: stored?["label"] as? String
+    label: stored?["label"] as? String,
+    isPro: stored?["isPro"] as? Bool ?? false
   )
 }
 
@@ -26,7 +29,7 @@ private func readStoredEntry() -> GoNoGoEntry {
 
 struct GoNoGoProvider: TimelineProvider {
   func placeholder(in context: Context) -> GoNoGoEntry {
-    GoNoGoEntry(date: Date(), status: "green", label: "Go")
+    GoNoGoEntry(date: Date(), status: "green", label: "Go", isPro: true)
   }
 
   func getSnapshot(in context: Context, completion: @escaping (GoNoGoEntry) -> Void) {
@@ -88,6 +91,14 @@ struct GoNoGoWidgetView: View {
   }
 
   var body: some View {
+    if entry.isPro {
+      statusBody
+    } else {
+      lockedBody
+    }
+  }
+
+  private var statusBody: some View {
     VStack(spacing: 4) {
       Image(systemName: iconName)
         .font(.system(size: 38))
@@ -100,6 +111,29 @@ struct GoNoGoWidgetView: View {
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .modifier(WidgetBackgroundModifier(background: background))
+  }
+
+  /// Placeholder for free users: the widget is a Pro feature.
+  private var lockedBody: some View {
+    VStack(spacing: 6) {
+      Image(systemName: "lock.fill")
+        .font(.system(size: 28))
+        .foregroundColor(neutralSlate)
+      Text("Pro feature")
+        .font(.system(size: 14, weight: .bold))
+        .foregroundColor(.white)
+        .lineLimit(1)
+        .minimumScaleFactor(0.7)
+      Text("Upgrade to Pro in DronePal")
+        .font(.system(size: 11))
+        .foregroundColor(neutralSlate)
+        .multilineTextAlignment(.center)
+        .lineLimit(2)
+        .minimumScaleFactor(0.8)
+    }
+    .padding(8)
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .modifier(WidgetBackgroundModifier(background: ZStack { cardColor }))
   }
 }
 

@@ -12,13 +12,14 @@ class GoNoGoWidgetModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("GoNoGoWidget")
 
-    Function("update") { status: String, label: String ->
+    Function("update") { status: String, label: String, isPro: Boolean ->
       val context = appContext.reactContext?.applicationContext ?: return@Function
       context
         .getSharedPreferences(GoNoGoWidgetProvider.PREFS_NAME, Context.MODE_PRIVATE)
         .edit()
         .putString(GoNoGoWidgetProvider.KEY_STATUS, status)
         .putString(GoNoGoWidgetProvider.KEY_LABEL, label)
+        .putBoolean(GoNoGoWidgetProvider.KEY_IS_PRO, isPro)
         .putLong(GoNoGoWidgetProvider.KEY_UPDATED_AT, System.currentTimeMillis())
         .apply()
       GoNoGoWidgetProvider.requestUpdate(context)

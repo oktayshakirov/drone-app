@@ -27,6 +27,7 @@ class GoNoGoWidgetProvider : AppWidgetProvider() {
     const val PREFS_NAME = "gonogo_widget"
     const val KEY_STATUS = "status"
     const val KEY_LABEL = "label"
+    const val KEY_IS_PRO = "isPro"
     const val KEY_UPDATED_AT = "updatedAt"
 
     // Same palette as the in-app card (tailwind.config.js).
@@ -52,10 +53,14 @@ class GoNoGoWidgetProvider : AppWidgetProvider() {
       val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
       val status = prefs.getString(KEY_STATUS, null)
       val label = prefs.getString(KEY_LABEL, null)
+      val isPro = prefs.getBoolean(KEY_IS_PRO, false)
 
       val views = RemoteViews(context.packageName, R.layout.widget_go_nogo)
 
-      val (background, icon, color, fallbackLabel) = when (status) {
+      // The widget is a Pro feature; free users see an upgrade placeholder.
+      val (background, icon, color, fallbackLabel) = if (!isPro) {
+        WidgetStyle(R.drawable.widget_bg_neutral, R.drawable.ic_widget_drone, COLOR_NEUTRAL, "Upgrade to Pro")
+      } else when (status) {
         "green" -> WidgetStyle(R.drawable.widget_bg_green, R.drawable.ic_widget_check, COLOR_GREEN, "Go")
         "yellow" -> WidgetStyle(R.drawable.widget_bg_yellow, R.drawable.ic_widget_warning, COLOR_YELLOW, "Caution")
         "red" -> WidgetStyle(R.drawable.widget_bg_red, R.drawable.ic_widget_close, COLOR_RED, "No Go")
@@ -65,8 +70,14 @@ class GoNoGoWidgetProvider : AppWidgetProvider() {
       views.setInt(R.id.widget_root, "setBackgroundResource", background)
       views.setImageViewResource(R.id.widget_icon, icon)
       views.setInt(R.id.widget_icon, "setColorFilter", color)
-      views.setTextViewText(R.id.widget_label, label ?: fallbackLabel)
+      views.setTextViewText(R.id.widget_label, if (isPro) label ?: fallbackLabel else fallbackLabel)
       views.setTextColor(R.id.widget_label, color)
+      // "Upgrade to Pro" is longer than the status labels; shrink it to fit.
+      views.setTextViewTextSize(
+        R.id.widget_label,
+        android.util.TypedValue.COMPLEX_UNIT_SP,
+        if (isPro) 18f else 13f,
+      )
 
       // Tap anywhere on the widget opens the app.
       context.packageManager.getLaunchIntentForPackage(context.packageName)?.let { launch ->

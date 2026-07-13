@@ -13,10 +13,11 @@ public class GoNoGoWidgetModule: Module {
   public func definition() -> ModuleDefinition {
     Name("GoNoGoWidget")
 
-    Function("update") { (status: String, label: String) in
+    Function("update") { (status: String, label: String, isPro: Bool) in
       let payload: [String: Any] = [
         "status": status,
         "label": label,
+        "isPro": isPro,
         "updatedAt": Date().timeIntervalSince1970,
       ]
       let defaults = UserDefaults(suiteName: Self.appGroupId)

@@ -58,7 +58,15 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   }, [hydrated, settings]);
 
   const setUnits = useCallback((units: Units) => {
-    setSettings((s) => ({ ...s, units }));
+    setSettings((s) => {
+      // Keep the wind unit in step with the units system so picking
+      // "Metric" alone doesn't leave wind in mph (and vice versa).
+      // Specialty wind units (m/s, knots) are an explicit choice and stay.
+      let windUnit = s.windUnit;
+      if (units === "metric" && s.windUnit === "mph") windUnit = "kmh";
+      if (units === "imperial" && s.windUnit === "kmh") windUnit = "mph";
+      return { ...s, units, windUnit };
+    });
   }, []);
 
   const setWindUnit = useCallback((windUnit: WindUnit) => {

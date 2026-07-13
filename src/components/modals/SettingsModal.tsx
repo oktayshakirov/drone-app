@@ -312,7 +312,10 @@ export function SettingsModal({
     if (visible) setActiveTab("settings");
   }, [visible]);
 
-  const showPlanTab = revenueCatAvailable;
+  // Dev builds always get the Plan tab so the dev Pro toggle stays reachable
+  // even where RevenueCat is unavailable (e.g. simulators).
+  const showPlanTab =
+    revenueCatAvailable || (showDevProToggle && setDevProEnabled != null);
   const effectiveTab: Tab =
     activeTab === "plan" && !showPlanTab ? "settings" : activeTab;
   const planLabel = getPlanLabel(customerInfo);
@@ -454,17 +457,6 @@ export function SettingsModal({
                     onSelect={setCompassEnabled}
                     getKey={(id) => (id ? "on" : "off")}
                   />
-                  {showDevProToggle && setDevProEnabled ? (
-                    <OptionList
-                      layout="horizontal"
-                      label="Pro plan (dev)"
-                      iconName="flask-outline"
-                      options={COMPASS_OPTIONS}
-                      value={devProEnabled}
-                      onSelect={setDevProEnabled}
-                      getKey={(id) => (id ? "on" : "off")}
-                    />
-                  ) : null}
                 </View>
               </ScrollView>
             )}
@@ -665,6 +657,18 @@ export function SettingsModal({
                     />
                   </Pressable>
                 )}
+
+                {showDevProToggle && setDevProEnabled ? (
+                  <OptionList
+                    layout="horizontal"
+                    label="Pro plan (dev)"
+                    iconName="flask-outline"
+                    options={COMPASS_OPTIONS}
+                    value={devProEnabled}
+                    onSelect={setDevProEnabled}
+                    getKey={(id) => (id ? "on" : "off")}
+                  />
+                ) : null}
               </ScrollView>
             )}
           </Pressable>
