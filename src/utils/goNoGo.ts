@@ -1,6 +1,7 @@
 import type {
   CurrentWeatherSummary,
   DroneClassThresholds,
+  HourlyForecastItem,
   SafetyStatus,
 } from "../types/weather";
 import type { WindUnit } from "../types/settings";
@@ -157,4 +158,49 @@ export function evaluateSafety(
     return "yellow";
   }
   return "green";
+}
+
+/** Build a pseudo current summary from an hourly forecast item so evaluateSafety can score it.
+ *  Visibility/Kp/UV aren't forecast hourly; they fall back to evaluateSafety's benign defaults. */
+function hourlyToSummary(h: HourlyForecastItem): CurrentWeatherSummary {
+  return {
+    conditionCode: null,
+    wind: {
+      speedMps: h.windSpeedMps,
+      gustMps: h.windGustMps,
+      directionDegrees: h.windDirectionDegrees,
+    },
+    visibilityMeters: null,
+    cloudCoverPercent: h.cloudCoverPercent,
+    temperatureCelsius: h.temperatureCelsius,
+    humidityPercent: null,
+    dewPointCelsius: null,
+    pressureHpa: null,
+    uvIndex: null,
+    precipitationChancePercent: h.precipitationChancePercent,
+    precipitationType: null,
+    sunrise: null,
+    sunset: null,
+    kpIndex: null,
+  };
+}
+
+/**
+ * First upcoming time in the hourly forecast where conditions evaluate green
+ * (based on the forecastable fields: wind speed, gust, precipitation chance).
+ * Returns null when no future hour in the forecast is green.
+ */
+export function findNextGoTime(
+  hourly: HourlyForecastItem[],
+  thresholds: DroneClassThresholds,
+): Date | null {
+  const now = Date.now();
+  for (const h of hourly) {
+    const t = new Date(h.date).getTime();
+    if (Number.isNaN(t) || t <= now) continue;
+    if (evaluateSafety(hourlyToSummary(h), thresholds) === "green") {
+      return new Date(t);
+    }
+  }
+  return null;
 }

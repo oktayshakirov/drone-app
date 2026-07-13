@@ -67,7 +67,9 @@ export const METRIC_INFO: Record<string, Info> = {
     title: "Sunrise & sunset",
     body:
       "Many operations are flown in daylight. Sunrise and sunset help you plan flight windows " +
-      "and stay within visual line of sight in good light.",
+      "and stay within visual line of sight in good light. Golden hour gives warm, soft light " +
+      "that's ideal for aerial photos and video; blue hour offers moody twilight tones — plan " +
+      "battery swaps so you're airborne when the light peaks.",
   },
   uvIndex: {
     title: "UV index",

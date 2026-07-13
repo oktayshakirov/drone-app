@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["GoNoGoWidgetModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.gonogowidget.GoNoGoWidgetModule"]
+  }
+}

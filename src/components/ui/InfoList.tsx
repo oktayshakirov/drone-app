@@ -10,6 +10,8 @@ const TEXT_VALUE = "#f1f5f9";
 export interface InfoListItem {
   label: string;
   value: string;
+  /** Optional secondary line under the value (e.g. wind gust). */
+  subValue?: string;
 }
 
 export type InfoListLayout = "row" | "wrap";
@@ -19,13 +21,16 @@ interface InfoListProps {
   title?: string;
   /** Read-only label + value items. */
   items: InfoListItem[];
-  /** "row" = single row; "wrap" = wrap into 2 columns (e.g. wind). Default "row". */
+  /** "row" = single equal-width row (e.g. 24h forecast); "wrap" = wrap into 2 columns. Default "row". */
   layout?: InfoListLayout;
 }
 
 /**
  * Read-only list of label/value items. Same visual style as OptionList (card, border)
  * but not clickable. Use for 24h forecast and other info blocks.
+ *
+ * In "row" layout items share a single equal-width row so the forecast fits the screen;
+ * values auto-shrink to fit rather than wrapping or cropping.
  */
 export function InfoList({ title, items, layout = "row" }: InfoListProps) {
   if (items.length === 0) return null;
@@ -41,8 +46,27 @@ export function InfoList({ title, items, layout = "row" }: InfoListProps) {
             key={index}
             style={[styles.item, isWrap ? styles.itemWrap : styles.itemRow]}
           >
-            <Text style={styles.label}>{item.label}</Text>
-            <Text style={styles.value}>{item.value}</Text>
+            <Text style={styles.label} numberOfLines={1}>
+              {item.label}
+            </Text>
+            <Text
+              style={styles.value}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+            >
+              {item.value}
+            </Text>
+            {item.subValue != null && (
+              <Text
+                style={styles.subValue}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+              >
+                {item.subValue}
+              </Text>
+            )}
           </View>
         ))}
       </View>
@@ -82,7 +106,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     paddingVertical: 10,
-    paddingHorizontal: 10,
+    paddingHorizontal: 6,
   },
   itemWrap: {
     flexBasis: "48%",
@@ -92,14 +116,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   label: {
-    fontSize: 15,
+    fontSize: 14,
     color: TEXT_LABEL,
   },
   value: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "500",
     color: TEXT_VALUE,
     marginTop: 4,
+    textAlign: "center",
+  },
+  subValue: {
+    fontSize: 13,
+    color: TEXT_LABEL,
+    marginTop: 2,
     textAlign: "center",
   },
 });

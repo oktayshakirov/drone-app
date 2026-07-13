@@ -11,7 +11,8 @@ import type { GridItem } from "../conditions/types";
 import { ConditionBox } from "../conditions/ConditionBox";
 import { WindCard } from "../conditions/WindCard";
 import { SunshineCurveCard } from "../conditions/SunshineCurveCard";
-import { InfoList } from "../ui/InfoList";
+import { InfoList, type InfoListItem } from "../ui/InfoList";
+import { getGoldenBlueHours, type TimeRange } from "../../utils/sunTimes";
 
 /** Data to show the weather condition (hero-style) in the info modal when metricKey is "weather". */
 export interface WeatherPreviewData {
@@ -45,6 +46,11 @@ interface InfoModalProps {
   degreesToCardinal?: (deg: number | null) => string;
   windUnit?: WindUnit;
   useImperial?: boolean;
+  /** Location for golden/blue hour times in the sunrise & sunset modal. */
+  latitude?: number | null;
+  longitude?: number | null;
+  /** "Notify me when it's Go" toggle for the flight conditions modal (only when status is yellow/red). */
+  goNotify?: { armed: boolean; onToggle: () => void } | null;
 }
 
 const STATUS_LABELS: Record<SafetyStatus, string> = {
@@ -173,16 +179,17 @@ function ForecastBlock({
   const indices = [0, 6, 12, 18, 24].filter((i) => i < hourly.length);
   if (indices.length === 0) return null;
 
-  const isWind = metricKey === "wind";
   const items = indices.map((idx) => {
     const h = hourly[idx];
     const label = formatHourLabel(idx);
     let value: string;
+    let subValue: string | undefined;
     if (metricKey === "wind") {
-      const speed = formatWind(h.windSpeedMps, windUnit);
-      const gust =
-        h.windGustMps != null ? formatWind(h.windGustMps, windUnit) : null;
-      value = gust ? `${speed} / ${gust}` : speed;
+      value = formatWind(h.windSpeedMps, windUnit);
+      subValue =
+        h.windGustMps != null
+          ? `G ${formatWind(h.windGustMps, windUnit)}`
+          : undefined;
     } else if (metricKey === "cloudCover") {
       value = formatPercent(h.cloudCoverPercent);
     } else if (metricKey === "precipitation") {
@@ -192,15 +199,103 @@ function ForecastBlock({
     } else {
       value = "—";
     }
-    return { label, value };
+    return { label, value, subValue };
   });
 
+  return <InfoList title="24h forecast" items={items} />;
+}
+
+/** Compact "Notify me when it's Go" toggle row for the flight conditions modal. */
+function GoNotifyRow({
+  armed,
+  onToggle,
+}: {
+  armed: boolean;
+  onToggle: () => void;
+}) {
   return (
-    <InfoList
-      title="24h forecast"
-      items={items}
-      layout={isWind ? "wrap" : "row"}
-    />
+    <Pressable
+      onPress={onToggle}
+      className="flex-row items-center justify-between gap-2 py-2.5 px-3 rounded-lg bg-card border border-border mb-4 active:opacity-80"
+      accessibilityRole="button"
+      accessibilityLabel={
+        armed
+          ? "Go alert set. Tap to cancel."
+          : "Notify me when conditions are Go"
+      }
+    >
+      <View className="flex-row items-center gap-2 flex-1 min-w-0">
+        <Ionicons
+          name={armed ? "notifications" : "notifications-outline"}
+          size={20}
+          color={armed ? "#22c55e" : "#94a3b8"}
+        />
+        <Text className="text-white font-medium text-base">
+          {armed ? "Go alert set" : "Notify me when it's Go"}
+        </Text>
+      </View>
+      <Text
+        className={
+          armed
+            ? "text-safe-green font-semibold text-sm"
+            : "text-slate-400 text-sm"
+        }
+      >
+        {armed ? "On" : "Off"}
+      </Text>
+    </Pressable>
+  );
+}
+
+/** Golden & blue hour times for the sunrise & sunset info modal. */
+function GoldenBlueHoursBlock({
+  sunrise,
+  latitude,
+  longitude,
+  formatSunTime,
+  use24h,
+}: {
+  sunrise: string | null | undefined;
+  latitude: number;
+  longitude: number;
+  formatSunTime: (iso: string, use24h: boolean) => string;
+  use24h: boolean;
+}) {
+  const hours = React.useMemo(() => {
+    const anchor = sunrise ? new Date(sunrise) : new Date();
+    const date = Number.isNaN(anchor.getTime()) ? new Date() : anchor;
+    return getGoldenBlueHours(date, latitude, longitude);
+  }, [sunrise, latitude, longitude]);
+
+  const toItem = (label: string, range: TimeRange | null): InfoListItem => ({
+    label,
+    value: range ? formatSunTime(range.start.toISOString(), use24h) : "—",
+    subValue: range
+      ? `to ${formatSunTime(range.end.toISOString(), use24h)}`
+      : undefined,
+  });
+
+  const golden = [
+    toItem("Morning", hours.morningGolden),
+    toItem("Evening", hours.eveningGolden),
+  ];
+  const blue = [
+    toItem("Morning", hours.morningBlue),
+    toItem("Evening", hours.eveningBlue),
+  ];
+
+  const noneAvailable =
+    !hours.morningGolden &&
+    !hours.eveningGolden &&
+    !hours.morningBlue &&
+    !hours.eveningBlue;
+  if (noneAvailable) return null;
+
+  return (
+    <>
+      <InfoList title="Golden hour" items={golden} />
+      <InfoList title="Blue hour" items={blue} />
+    </>
   );
 }
 
@@ -239,6 +334,9 @@ export function InfoModal({
   degreesToCardinal,
   windUnit = "mph",
   useImperial = true,
+  latitude,
+  longitude,
+  goNotify,
 }: InfoModalProps) {
   const insets = useSafeAreaInsets();
   const info = metricKey ? getInfo(metricKey) : null;
@@ -308,6 +406,18 @@ export function InfoModal({
               <Text className="text-slate-300 text-base mt-3 mb-4 leading-7">
                 {info.body}
               </Text>
+              {metricKey === "sunriseSunset" &&
+                latitude != null &&
+                longitude != null &&
+                formatSunTime && (
+                  <GoldenBlueHoursBlock
+                    sunrise={conditionPreview?.sunrise}
+                    latitude={latitude}
+                    longitude={longitude}
+                    formatSunTime={formatSunTime}
+                    use24h={use24h}
+                  />
+                )}
               {showForecast && hourlyForecast && formatWind && formatPercent && formatTemp && (
                 <ForecastBlock
                   hourly={hourlyForecast}
@@ -318,6 +428,9 @@ export function InfoModal({
                   windUnit={windUnit}
                   useImperial={useImperial ?? true}
                 />
+              )}
+              {metricKey === "flightConditions" && goNotify && (
+                <GoNotifyRow armed={goNotify.armed} onToggle={goNotify.onToggle} />
               )}
               {showBreakdown && (
                 <View className="mt-2">

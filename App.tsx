@@ -47,6 +47,7 @@ import {
 } from "./src/constants/droneThresholds";
 import { useLocation } from "./src/hooks/useLocation";
 import { useWeather } from "./src/hooks/useWeather";
+import { useGoNotification } from "./src/hooks/useGoNotification";
 import { useRevenueCat } from "./src/hooks/useRevenueCat";
 import { getWeatherKitEnv } from "./src/utils/env";
 import type { CameraTutorial } from "./src/constants/cameraTutorials";
@@ -59,6 +60,7 @@ import {
   formatSunTime,
   degreesToCardinal,
 } from "./src/utils/conversions";
+import { updateGoNoGoWidget } from "./modules/gonogo-widget";
 export default function App() {
   return (
     <SettingsProvider>
@@ -276,6 +278,20 @@ function AppContent() {
     const thresholds = getThresholdsForWeightClass(settings.droneWeightClass);
     return evaluateSafety(weather.current, thresholds);
   }, [weather, settings.droneWeightClass]);
+
+  // Keep the home screen widget in sync with the in-app Go/No-Go card.
+  useEffect(() => {
+    if (!weather) return;
+    const labels = { green: "Go", yellow: "Caution", red: "No Go" } as const;
+    updateGoNoGoWidget(safetyStatus, labels[safetyStatus]);
+  }, [weather, safetyStatus]);
+
+  const { notifyArmed, toggleGoNotification } = useGoNotification({
+    weather: weather ?? null,
+    status: safetyStatus,
+    droneWeightClass: settings.droneWeightClass,
+    use24h: settings.timeFormat === "24h",
+  });
 
   const conditionBreakdown = useMemo(() => {
     if (!weather) return null;
@@ -712,6 +728,13 @@ function AppContent() {
             degreesToCardinal={degreesToCardinal}
             windUnit={settings.windUnit}
             useImperial={settings.units === "imperial"}
+            latitude={coords?.latitude ?? null}
+            longitude={coords?.longitude ?? null}
+            goNotify={
+              weather && safetyStatus !== "green"
+                ? { armed: notifyArmed, onToggle: toggleGoNotification }
+                : null
+            }
           />
           {coords && (
             <MapModal

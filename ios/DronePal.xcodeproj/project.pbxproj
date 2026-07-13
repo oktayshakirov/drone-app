@@ -9,22 +9,54 @@
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		202D0F93766ECE34DAB1560F /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE084D4F82E425F0D65408FB /* ExpoModulesProvider.swift */; };
+		265C2AE6B6417DE6F433BD36 /* DronePalWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3E2E4A1FF5177B975D16B423 /* DronePalWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		36F18177DA058FF865A585A9 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 209A8E7ADE505D49414C3728 /* PrivacyInfo.xcprivacy */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		465C811635B353CCCECDC809 /* libPods-DronePal.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D5D80F686A0271FF6D16EB9C /* libPods-DronePal.a */; };
+		4AC87B936D9CF8599A9B3528 /* DronePalWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFAF3FDA47D4B0DDC3B02F08 /* DronePalWidget.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
+		C90668EE4FC39F7BA753F9B7 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 69CB6FBBE5925AD5E282726F /* Foundation.framework */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		DD6062D44034BB060897D1F0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2770FCBAF737041ADA3F6DC3;
+			remoteInfo = DronePalWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		BC40787542B980005F2F8070 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				265C2AE6B6417DE6F433BD36 /* DronePalWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		13B07F961A680F5B00A75B9A /* DronePal.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DronePal.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = DronePal/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = DronePal/Info.plist; sourceTree = "<group>"; };
 		209A8E7ADE505D49414C3728 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = DronePal/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		3E2E4A1FF5177B975D16B423 /* DronePalWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DronePalWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		58CC027BC1F587ACF8BF77D4 /* DronePalWidget.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = DronePalWidget.entitlements; sourceTree = "<group>"; };
+		69CB6FBBE5925AD5E282726F /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = DronePal/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		CE084D4F82E425F0D65408FB /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-DronePal/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		D5D80F686A0271FF6D16EB9C /* libPods-DronePal.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-DronePal.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		D76092BE644AA295C0D48E2F /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		DFAF3FDA47D4B0DDC3B02F08 /* DronePalWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DronePalWidget.swift; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		EEF412925E29D3230247BFED /* Pods-DronePal.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DronePal.debug.xcconfig"; path = "Target Support Files/Pods-DronePal/Pods-DronePal.debug.xcconfig"; sourceTree = "<group>"; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = DronePal/AppDelegate.swift; sourceTree = "<group>"; };
@@ -38,6 +70,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				465C811635B353CCCECDC809 /* libPods-DronePal.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4AF50076F2DABA572207CE14 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C90668EE4FC39F7BA753F9B7 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -71,6 +111,7 @@
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
 				D5D80F686A0271FF6D16EB9C /* libPods-DronePal.a */,
+				B9E44EE80BF23CD412B89B52 /* iOS */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -100,6 +141,7 @@
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				4F6FE8E39B63CAF40CDC9326 /* Pods */,
 				0347D6C9EAD60496CAF727E8 /* ExpoModulesProviders */,
+				8FD0C175A02F69D9B7595627 /* DronePalWidget */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -110,8 +152,20 @@
 			isa = PBXGroup;
 			children = (
 				13B07F961A680F5B00A75B9A /* DronePal.app */,
+				3E2E4A1FF5177B975D16B423 /* DronePalWidget.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		8FD0C175A02F69D9B7595627 /* DronePalWidget */ = {
+			isa = PBXGroup;
+			children = (
+				DFAF3FDA47D4B0DDC3B02F08 /* DronePalWidget.swift */,
+				D76092BE644AA295C0D48E2F /* Info.plist */,
+				58CC027BC1F587ACF8BF77D4 /* DronePalWidget.entitlements */,
+			);
+			name = DronePalWidget;
+			path = DronePalWidget;
 			sourceTree = "<group>";
 		};
 		A581E7B5140CFAE30AE3DA67 /* DronePal */ = {
@@ -120,6 +174,14 @@
 				CE084D4F82E425F0D65408FB /* ExpoModulesProvider.swift */,
 			);
 			name = DronePal;
+			sourceTree = "<group>";
+		};
+		B9E44EE80BF23CD412B89B52 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				69CB6FBBE5925AD5E282726F /* Foundation.framework */,
+			);
+			name = iOS;
 			sourceTree = "<group>";
 		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
@@ -143,6 +205,7 @@
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
+				BC40787542B980005F2F8070 /* Embed Foundation Extensions */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
 				354EFFA1AD6E3781C3602649 /* [CP] Embed Pods Frameworks */,
@@ -151,11 +214,29 @@
 			buildRules = (
 			);
 			dependencies = (
+				F1859F97E87CB8B82001DB51 /* PBXTargetDependency */,
 			);
 			name = DronePal;
 			productName = DronePal;
 			productReference = 13B07F961A680F5B00A75B9A /* DronePal.app */;
 			productType = "com.apple.product-type.application";
+		};
+		2770FCBAF737041ADA3F6DC3 /* DronePalWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 40D320509C1BF10271708153 /* Build configuration list for PBXNativeTarget "DronePalWidget" */;
+			buildPhases = (
+				88F1CC2E709BCD1475002C4B /* Sources */,
+				4AF50076F2DABA572207CE14 /* Frameworks */,
+				FEEA2E408DD6F2C39EEA7D2B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DronePalWidget;
+			productName = DronePalWidget;
+			productReference = 3E2E4A1FF5177B975D16B423 /* DronePalWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -184,6 +265,7 @@
 			projectRoot = "";
 			targets = (
 				13B07F861A680F5B00A75B9A /* DronePal */,
+				2770FCBAF737041ADA3F6DC3 /* DronePalWidget */,
 			);
 		};
 /* End PBXProject section */
@@ -197,6 +279,13 @@
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
 				36F18177DA058FF865A585A9 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FEEA2E408DD6F2C39EEA7D2B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -280,8 +369,10 @@
 			);
 			inputPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-DronePal/Pods-DronePal-resources.sh",
+				"${PODS_CONFIGURATION_BUILD_DIR}/EXApplication/ExpoApplication_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/ExpoConstants_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/EXNotifications/ExpoNotifications_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXUpdates/EXUpdates.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoDevice/ExpoDevice_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem_privacy.bundle",
@@ -302,8 +393,10 @@
 			);
 			name = "[CP] Copy Pods Resources";
 			outputPaths = (
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoApplication_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXConstants.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoConstants_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoNotifications_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXUpdates.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoDevice_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoFileSystem_privacy.bundle",
@@ -363,7 +456,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		88F1CC2E709BCD1475002C4B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4AC87B936D9CF8599A9B3528 /* DronePalWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		F1859F97E87CB8B82001DB51 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = DronePalWidget;
+			target = 2770FCBAF737041ADA3F6DC3 /* DronePalWidget */;
+			targetProxy = DD6062D44034BB060897D1F0 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
@@ -437,6 +547,36 @@
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
+		};
+		6D90D00A002AA6A79C4673D6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = DronePalWidget/DronePalWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = 2UNNRK9L5Q;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DronePalWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DronePal;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.5.1;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.shadev.drone-pal.widget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
 		};
 		83CBBA201A601CBA00E9B192 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -556,6 +696,37 @@
 			};
 			name = Release;
 		};
+		E657E0E608FAD9AF2BFBEC6C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = DronePalWidget/DronePalWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = 2UNNRK9L5Q;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DronePalWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DronePal;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.5.1;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.shadev.drone-pal.widget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -564,6 +735,15 @@
 			buildConfigurations = (
 				13B07F941A680F5B00A75B9A /* Debug */,
 				13B07F951A680F5B00A75B9A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		40D320509C1BF10271708153 /* Build configuration list for PBXNativeTarget "DronePalWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E657E0E608FAD9AF2BFBEC6C /* Release */,
+				6D90D00A002AA6A79C4673D6 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

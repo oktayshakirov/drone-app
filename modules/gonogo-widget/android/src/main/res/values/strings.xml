@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="gonogo_widget_label">Go / No-Go</string>
+  <string name="gonogo_widget_description">Current flight conditions at a glance.</string>
+</resources>
