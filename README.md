@@ -8,7 +8,7 @@ Whether you are planning a golden-hour shoot or a quick line-of-sight flight, Dr
 
 ## Demo
 
-![Drone Pal](https://oktayshakirov.com/assets/images/projects/drone-pal.png "Drone Pal")
+![Drone Pal](https://oktayshakirov.com/assets/images/projects/drone-pal.webp "Drone Pal")
 
 <p align="center">
   <a href="https://play.google.com/store/apps/details?id=com.shadev.dronepal&pli=1"><strong>➥ Get it on Google Play</strong></a>
